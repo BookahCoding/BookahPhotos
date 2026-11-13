@@ -194,6 +194,8 @@ fun SettingsScreen(
             val t = state.timings
             if (t != null) {
                 t.startToLibraryMs?.let { Line(stringResource(R.string.speed_start), "$it ms") }
+                Line(stringResource(R.string.speed_before), "${t.beforeAppMs} ms")
+                Line(stringResource(R.string.speed_read), "${t.readMs} ms")
                 Line(stringResource(R.string.speed_merge), "${t.mergeMs} ms (${t.items})")
             }
             if (bench != null) {

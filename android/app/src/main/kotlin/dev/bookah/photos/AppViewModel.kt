@@ -76,7 +76,7 @@ data class UiState(
 )
 
 /** Measured on the phone itself, shown in Settings so the speed targets can be checked on the real device. */
-class Timings(val startToLibraryMs: Long?, val mergeMs: Long, val items: Int)
+class Timings(val startToLibraryMs: Long?, val mergeMs: Long, val items: Int, val beforeAppMs: Long = 0, val readMs: Long = 0)
 
 sealed interface UpdateUi {
     data object Idle : UpdateUi
@@ -266,18 +266,27 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val rebuildLock = kotlinx.coroutines.sync.Mutex()
 
     /** Reads the grid data of the current snapshot into memory (off the main thread) and merges it with the phone's photos. */
+    /** When this screen's state was created, and how long reading the index file took: shown in Settings > Speed so a slow start can be told apart. */
+    private val createdAt = android.os.SystemClock.elapsedRealtime()
+    private var readMs = 0L
+
     private suspend fun loadLibrary() {
         val file = store.currentFile()
+        val readStart = android.os.SystemClock.elapsedRealtime()
         if (file != null) {
             val rows = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { Reader.loadRows(file) }
             if (rows != null) snapshotRows = rows
             hiddenSnapshotRows = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { Reader.loadHiddenRows(file) }
-            val dups = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { Reader.loadDuplicateGroups(file) }
-            _state.update { it.copy(duplicates = dups) }
+            readMs = android.os.SystemClock.elapsedRealtime() - readStart
             search.onSnapshot(file)                                   // the vectors and tags of this snapshot (in the background)
             people.onSnapshot(file)                                   // people and the reader's corrections (in the background)
-            val (mem, pl) = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { dev.bookah.photos.data.MemoriesReader.load(file) to dev.bookah.photos.data.PlacesReader.load(file) }
-            _state.update { it.copy(memories = mem, places = pl) }
+            // duplicates, memories and places are not needed to show the library: they are read in the background while the grid is already being built
+            viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                val dups = Reader.loadDuplicateGroups(file)
+                val mem = dev.bookah.photos.data.MemoriesReader.load(file)
+                val pl = dev.bookah.photos.data.PlacesReader.load(file)
+                _state.update { it.copy(duplicates = dups, memories = mem, places = pl) }
+            }
         }
         if (extraFiles.isEmpty()) extraFiles = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { extraCache.read() }
         rebuild()
@@ -316,7 +325,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val mergeMs = android.os.SystemClock.elapsedRealtime() - t0
         _state.update {
             val first = it.timings?.startToLibraryMs ?: (android.os.SystemClock.elapsedRealtime() - android.os.Process.getStartElapsedRealtime())
-            it.copy(library = if (lib.size > 0 || store.currentFile() != null) lib else null, hiddenLibrary = hiddenLib, localStats = stats, timings = Timings(first, mergeMs, lib.size))
+            it.copy(library = if (lib.size > 0 || store.currentFile() != null) lib else null, hiddenLibrary = hiddenLib, localStats = stats, timings = Timings(first, mergeMs, lib.size, beforeAppMs = createdAt - android.os.Process.getStartElapsedRealtime(), readMs = readMs))
         }
     }
 

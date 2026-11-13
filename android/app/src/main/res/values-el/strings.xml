@@ -134,4 +134,6 @@
     <string name="crash_text">Η εφαρμογή έκλεισε απροσδόκητα (τελευταία φορά: %1$s). Η αναφορά μένει σε αυτό το κινητό και δεν στάλθηκε πουθενά. Μπορείς να την μοιραστείς εσύ. Μπορεί να περιέχει τη διεύθυνση του Nextcloud σου, γι’ αυτό δες την πρώτα.</string>
     <string name="crash_share">Κοινοποίηση της αναφοράς</string>
     <string name="crash_clear">Διαγραφή της αναφοράς</string>
+    <string name="speed_before">Πριν αρχίσει να δουλεύει η εφαρμογή</string>
+    <string name="speed_read">Ανάγνωση του αρχείου ευρετηρίου</string>
 </resources>
