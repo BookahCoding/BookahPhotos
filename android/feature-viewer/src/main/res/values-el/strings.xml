@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="back">Πίσω</string>
+    <string name="more">Περισσότερα</string>
+    <string name="share">Κοινοποίηση</string>
+    <string name="favourite">Αγαπημένο</string>
+    <string name="info">Πληροφορίες</string>
+    <string name="unknown_date">Άγνωστη ημερομηνία</string>
+    <string name="no_caption">Χωρίς λεζάντα</string>
+    <string name="details_camera">Κάμερα</string>
+    <string name="details_file">Αρχείο</string>
+    <string name="details_place">Τοποθεσία</string>
+    <string name="details_in_nextcloud">Στο Nextcloud</string>
+    <string name="details_date_assumed">Η ζώνη ώρας θεωρήθηκε</string>
+    <string name="no_preview">Δεν υπάρχει προεπισκόπηση για αυτό το αρχείο.</string>
+    <string name="video">Βίντεο</string>
+    <string name="video_failed">Το βίντεο δεν μπορεί να αναπαραχθεί. Είναι ανοιχτό το Tailscale;</string>
+    <string name="dash">-</string>
+    <string name="details_phone_only">Μόνο σε αυτό το κινητό (χωρίς αντίγραφο)</string>
+    <string name="details_on_both">Σε αυτό το κινητό και στο Nextcloud</string>
+    <string name="details_folder">Φάκελος: %1$s</string>
+    <string name="back_up_now">Δημιουργία αντιγράφου ασφαλείας</string>
+    <string name="details_not_indexed">Δεν έχει ευρετηριαστεί ακόμη: άτομα, τοποθεσίες και αναζήτηση έρχονται με την επόμενη ενημέρωση του ευρετηρίου.</string>
+    <string name="delete">Διαγραφή</string>
+    <string name="hide">Απόκρυψη</string>
+    <string name="unhide">Εμφάνιση</string>
+    <string name="unfavourite">Αφαίρεση από τα αγαπημένα</string>
+    <string name="add_to_album">Προσθήκη σε άλμπουμ</string>
+    <string name="remove_from_album">Αφαίρεση από αυτό το άλμπουμ</string>
+</resources>

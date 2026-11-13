@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="back">Back</string>
+    <string name="map">Map</string>
+    <string name="map_empty">No photos with a place yet.</string>
+</resources>

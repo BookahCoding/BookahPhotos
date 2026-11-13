@@ -1,0 +1,33 @@
+# Never commit real photos, models, secrets or local state
+sample/
+Sample/
+.venv/
+*.onnx
+*.onnx_data
+*.npy
+out/
+review-results.json
+*.log
+*.apk
+*.jks
+*.keystore
+local.properties
+.env
+__pycache__/
+
+android-spike/app/src/main/assets/*.bin
+android-spike/app/src/main/assets/spike_data.json
+android-spike/local.properties
+android-spike/.gradle/
+android-spike/build/
+android-spike/app/build/
+
+# Android app (BookahPhotos): build output, local settings and the release signing key never go into Git
+android/.gradle/
+android/build/
+android/**/build/
+android/.kotlin/
+android/keystore.properties
+android/local.properties
+*.p12
+signing/

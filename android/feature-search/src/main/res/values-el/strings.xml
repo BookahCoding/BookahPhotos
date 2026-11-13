@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="search_hint">Αναζήτηση φωτογραφιών</string>
+    <string name="search_back">Πίσω</string>
+    <string name="search_clear">Καθαρισμός</string>
+    <string name="search_results_n">%1$d φωτογραφίες</string>
+    <string name="search_nothing">Δεν βρέθηκε τίποτα.</string>
+    <string name="search_categories">Κατηγορίες</string>
+    <string name="search_recent">Πρόσφατες αναζητήσεις</string>
+    <string name="search_try">Δοκιμάστε</string>
+    <string name="search_example_1">ηλιοβασίλεμα στη θάλασσα</string>
+    <string name="search_example_2">τούρτα γενεθλίων</string>
+    <string name="search_example_3">παιδιά στην παιδική χαρά</string>
+    <string name="search_searching">Αναζήτηση…</string>
+    <string name="model_title">Αναζήτηση με βάση το περιεχόμενο</string>
+    <string name="model_available">Γράψτε μια λέξη στα ελληνικά ή στα αγγλικά και βρείτε φωτογραφίες. Χρειάζεται μία φορά λήψη %1$s στο κινητό.</string>
+    <string name="model_download">Λήψη</string>
+    <string name="model_downloading">Λήψη… %1$s από %2$s</string>
+    <string name="model_loading">Προετοιμασία…</string>
+    <string name="model_not_published">Το μοντέλο αναζήτησης δεν υπάρχει ακόμα στο Nextcloud σας. Οι κατηγορίες παρακάτω λειτουργούν.</string>
+    <string name="model_failed">Δεν φορτώθηκε το μοντέλο αναζήτησης: %1$s</string>
+    <string name="model_retry">Δοκιμή ξανά</string>
+    <string name="blocked_no_vectors">Αυτό το ευρετήριο δεν έχει ακόμα δεδομένα αναζήτησης. Εμφανίζονται μετά την επόμενη εκτέλεση του indexer. Οι κατηγορίες λειτουργούν όταν υπάρχουν.</string>
+    <string name="blocked_wrong_model">Το ευρετήριο και το μοντέλο αναζήτησης του κινητού είναι από διαφορετικές εκδόσεις, γι’ αυτό η αναζήτηση είναι απενεργοποιημένη. Διαγράψτε το μοντέλο στις Ρυθμίσεις και κατεβάστε το ξανά.</string>
+</resources>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="library">Βιβλιοθήκη</string>
+    <string name="years">Έτη</string>
+    <string name="months">Μήνες</string>
+    <string name="all">Όλα</string>
+    <string name="select">Επιλογή</string>
+    <string name="done">Τέλος</string>
+    <string name="selected_n">Επιλεγμένα (%1$d)</string>
+    <string name="share">Κοινοποίηση</string>
+    <string name="search">Αναζήτηση</string>
+    <string name="unknown_date">Άγνωστη ημερομηνία</string>
+    <string name="items_n">%1$d στοιχεία</string>
+    <string name="raw_tile">RAW</string>
+    <string name="empty_library">Δεν υπάρχει τίποτα στο ευρετήριο ακόμη.</string>
+    <string name="preparing_share">Προετοιμασία %1$d από %2$d…</string>
+    <string name="share_failed">Δεν ήταν δυνατή η προετοιμασία των αρχείων. Είναι ανοιχτό το Tailscale;</string>
+    <string name="source_all">Όλα</string>
+    <string name="source_nextcloud">Nextcloud</string>
+    <string name="source_phone">Αυτό το κινητό</string>
+    <string name="delete">Διαγραφή</string>
+    <string name="hide">Απόκρυψη</string>
+    <string name="favourite">Αγαπημένο</string>
+    <string name="unfavourite">Αφαίρεση από τα αγαπημένα</string>
+    <string name="add_to_album">Προσθήκη σε άλμπουμ</string>
+    <string name="unhide">Εμφάνιση</string>
+    <string name="photo_label">Φωτογραφία, %1$s</string>
+    <string name="video_label">Βίντεο, %1$s</string>
+    <string name="photo_label_undated">Φωτογραφία, χωρίς ημερομηνία</string>
+    <string name="video_label_undated">Βίντεο, χωρίς ημερομηνία</string>
+    <string name="tile_selected">επιλεγμένη</string>
+</resources>

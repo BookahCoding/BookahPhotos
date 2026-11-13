@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="back">Back</string>
+    <string name="more">More</string>
+    <string name="share">Share</string>
+    <string name="favourite">Favourite</string>
+    <string name="info">Info</string>
+    <string name="unknown_date">Unknown date</string>
+    <string name="no_caption">No caption</string>
+    <string name="details_camera">Camera</string>
+    <string name="details_file">File</string>
+    <string name="details_place">Place</string>
+    <string name="details_in_nextcloud">In Nextcloud</string>
+    <string name="details_date_assumed">Time zone assumed</string>
+    <string name="no_preview">No preview is available for this file.</string>
+    <string name="video">Video</string>
+    <string name="video_failed">The video could not be played. Is Tailscale on?</string>
+    <string name="dash">-</string>
+    <string name="details_phone_only">Only on this phone (not backed up)</string>
+    <string name="details_on_both">On this phone and in Nextcloud</string>
+    <string name="details_folder">Folder: %1$s</string>
+    <string name="back_up_now">Back up now</string>
+    <string name="details_not_indexed">Not indexed yet: people, places and search arrive with the next index update.</string>
+    <string name="delete">Delete</string>
+    <string name="hide">Hide</string>
+    <string name="unhide">Unhide</string>
+    <string name="unfavourite">Remove from favourites</string>
+    <string name="add_to_album">Add to album</string>
+    <string name="remove_from_album">Remove from this album</string>
+</resources>

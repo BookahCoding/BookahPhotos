@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="search_hint">Search photos</string>
+    <string name="search_back">Back</string>
+    <string name="search_clear">Clear</string>
+    <string name="search_results_n">%1$d photos</string>
+    <string name="search_nothing">Nothing found.</string>
+    <string name="search_categories">Categories</string>
+    <string name="search_recent">Recent searches</string>
+    <string name="search_try">Try</string>
+    <string name="search_example_1">sunset over the sea</string>
+    <string name="search_example_2">birthday cake</string>
+    <string name="search_example_3">children at the playground</string>
+    <string name="search_searching">Searching…</string>
+    <string name="model_title">Search by what is in the photo</string>
+    <string name="model_available">Type a word in Greek or English and find the photos. This needs a one-time download of %1$s to this phone.</string>
+    <string name="model_download">Download</string>
+    <string name="model_downloading">Downloading… %1$s of %2$s</string>
+    <string name="model_loading">Getting ready…</string>
+    <string name="model_not_published">The search model is not in your Nextcloud yet. The categories below still work.</string>
+    <string name="model_failed">The search model could not be loaded: %1$s</string>
+    <string name="model_retry">Try again</string>
+    <string name="blocked_no_vectors">This index has no search data yet. It appears after the next indexer run. The categories below still work when it has them.</string>
+    <string name="blocked_wrong_model">The index and the search model on this phone come from different versions, so searching is switched off. Delete the model in Settings and download it again.</string>
+</resources>

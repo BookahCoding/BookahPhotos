@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="library">Library</string>
+    <string name="years">Years</string>
+    <string name="months">Months</string>
+    <string name="all">All</string>
+    <string name="select">Select</string>
+    <string name="done">Done</string>
+    <string name="selected_n">Selected (%1$d)</string>
+    <string name="share">Share</string>
+    <string name="search">Search</string>
+    <string name="unknown_date">Unknown date</string>
+    <string name="items_n">%1$d items</string>
+    <string name="raw_tile">RAW</string>
+    <string name="empty_library">Nothing in the index yet.</string>
+    <string name="preparing_share">Preparing %1$d of %2$d…</string>
+    <string name="share_failed">Could not prepare the files. Is Tailscale on?</string>
+    <string name="source_all">All</string>
+    <string name="source_nextcloud">Nextcloud</string>
+    <string name="source_phone">This phone</string>
+    <string name="delete">Delete</string>
+    <string name="hide">Hide</string>
+    <string name="favourite">Favourite</string>
+    <string name="unfavourite">Remove from favourites</string>
+    <string name="add_to_album">Add to album</string>
+    <string name="unhide">Unhide</string>
+    <string name="photo_label">Photo, %1$s</string>
+    <string name="video_label">Video, %1$s</string>
+    <string name="photo_label_undated">Photo, no date</string>
+    <string name="video_label_undated">Video, no date</string>
+    <string name="tile_selected">selected</string>
+</resources>

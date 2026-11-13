@@ -1,0 +1,12 @@
+# Baseline profile (Phase 6e): the code the app runs at start-up and while scrolling, so Android compiles it ahead of time when the app is installed.
+# "H" hot, "S" runs at start-up, "P" runs after start-up, "L" the method is listed. The libraries that ship their own profile (Compose, AndroidX) bring it themselves.
+# Everything of the app's own packages: the screens, the library index, the snapshot readers, the search and the people code.
+HSPLdev/bookah/photos/**;->**(**)**
+Ldev/bookah/photos/**;
+# Libraries the app uses all the time: picture loading, the network, JSON and coroutines.
+HSPLcoil3/**;->**(**)**
+Lcoil3/**;
+HSPLokhttp3/**;->**(**)**
+HSPLokio/**;->**(**)**
+HSPLkotlinx/serialization/**;->**(**)**
+HSPLkotlinx/coroutines/**;->**(**)**

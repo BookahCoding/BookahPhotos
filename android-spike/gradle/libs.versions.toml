@@ -1,0 +1,11 @@
+[versions]
+agp = "9.4.1"
+onnxruntime = "1.31.1"
+core-ktx = "1.19.1"
+
+[libraries]
+onnxruntime-android = { module = "com.microsoft.onnxruntime:onnxruntime-android", version.ref = "onnxruntime" }
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "core-ktx" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
