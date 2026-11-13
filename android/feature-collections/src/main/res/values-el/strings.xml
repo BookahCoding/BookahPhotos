@@ -88,4 +88,14 @@
     <string name="duplicates">Διπλότυπα</string>
     <string name="duplicates_count">%1$d φωτογραφίες</string>
     <string name="face_of">Πρόσωπο: %1$s</string>
+    <string name="who_is_this">Ποιος είναι αυτός;</string>
+    <string name="who_is_hint">%1$d πρόσωπα που κανείς δεν έχει ονομάσει. Επίλεξε τα πρόσωπα ενός ατόμου (πάτημα ή παρατεταμένο πάτημα και σύρσιμο) και πες ποιος είναι.</string>
+    <string name="who_is_empty">Όλα τα πρόσωπα έχουν τοποθετηθεί. Δεν υπάρχει τίποτα να ονομάσεις.</string>
+    <string name="who_clear">Εκκαθάριση (%1$d)</string>
+    <string name="who_assign">Ποιος είναι;</string>
+    <string name="who_not_person">Δεν είναι άτομο</string>
+    <string name="who_new_person">Νέο άτομο…</string>
+    <string name="who_pick_title">Ποιανού είναι αυτά τα %1$d πρόσωπα;</string>
+    <string name="face_unknown">Πρόσωπο κάποιου που δεν έχει ονομαστεί ακόμη</string>
+    <string name="who_entry">Ποιος είναι αυτός; (%1$d πρόσωπα)</string>
 </resources>

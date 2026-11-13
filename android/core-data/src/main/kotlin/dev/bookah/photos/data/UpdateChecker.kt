@@ -28,14 +28,13 @@ class UpdateChecker(private val http: OkHttpClient, private val repo: String, pr
     /** The newest published (not draft, not pre-release) version that is newer than [currentVersion], or null when this one is the newest. */
     suspend fun newerThan(currentVersion: String): UpdateInfo? = withContext(Dispatchers.IO) {
         require(repo.matches(Regex("[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+"))) { "unexpected repository name" }
-        val req = Request.Builder().url("$baseUrl/repos/$repo/releases?per_page=15").header("Accept", "application/vnd.github+json").build()
+        // GitHub's own "latest release": the newest one that is neither a draft nor a pre-release, however many test builds were published after it
+        val req = Request.Builder().url("$baseUrl/repos/$repo/releases/latest").header("Accept", "application/vnd.github+json").build()
         val body = http.newCall(req).execute().use { resp ->
             if (!resp.isSuccessful) throw IOException("GitHub answered ${resp.code}")
             resp.body.string()
         }
-        val best = json.decodeFromString<List<GhRelease>>(body)
-            .filter { !it.draft && !it.prerelease }                       // test builds (pre-releases) are never offered to the people who use the app
-            .maxWithOrNull { a, b -> compareVersions(a.tag_name, b.tag_name) } ?: return@withContext null
+        val best = json.decodeFromString<GhRelease>(body).takeIf { !it.draft && !it.prerelease } ?: return@withContext null
         if (compareVersions(best.tag_name, currentVersion) <= 0) return@withContext null
         val apks = best.assets.filter { it.name.endsWith(".apk", ignoreCase = true) }
         val apk = apks.firstOrNull { it.name.contains("arm64", ignoreCase = true) } ?: apks.firstOrNull()

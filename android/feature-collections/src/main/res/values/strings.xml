@@ -88,4 +88,14 @@
     <string name="duplicates">Duplicates</string>
     <string name="duplicates_count">%1$d photos</string>
     <string name="face_of">Face of %1$s</string>
+    <string name="who_is_this">Who is this?</string>
+    <string name="who_is_hint">%1$d faces nobody has named. Select the faces of one person (tap, or press and hold and slide), then say who it is.</string>
+    <string name="who_is_empty">Every face is placed. Nothing to name.</string>
+    <string name="who_clear">Clear (%1$d)</string>
+    <string name="who_assign">Who is this?</string>
+    <string name="who_not_person">Not a person</string>
+    <string name="who_new_person">A new person…</string>
+    <string name="who_pick_title">Who are these %1$d faces?</string>
+    <string name="face_unknown">Face of somebody not named yet</string>
+    <string name="who_entry">Who is this? (%1$d faces)</string>
 </resources>

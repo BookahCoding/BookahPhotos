@@ -27,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.platform.testTag
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -50,6 +51,7 @@ fun SettingsScreen(
     onCheckUpdates: () -> Unit, onOpenUrl: (String) -> Unit, onMeasureScrolling: () -> Unit, bench: BenchResult?, modifier: Modifier = Modifier,
     searchUi: dev.bookah.photos.search.SearchUi = dev.bookah.photos.search.SearchUi(), modelBytes: Long = 0L,
     onDownloadModel: () -> Unit = {}, onDeleteModel: () -> Unit = {}, people: PeopleState = PeopleState(),
+    onAllowMobileData: (Boolean) -> Unit = {}, onDownloadNow: () -> Unit = {},
 ) {
     var confirmSignOut by remember { mutableStateOf(false) }
     val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
@@ -100,6 +102,7 @@ fun SettingsScreen(
             Text(
                 when {
                     sync is SyncUi.Done && sync.result is SyncResult.Offline -> stringResource(R.string.offline)
+                    sync is SyncUi.Done && sync.result is SyncResult.WaitingForWifi -> stringResource(R.string.waiting_for_wifi, ((sync.result as SyncResult.WaitingForWifi).sizeBytes / 1_000_000).toInt())
                     sync is SyncUi.Done && sync.result is SyncResult.UpToDate -> stringResource(R.string.up_to_date)
                     sync is SyncUi.Done && sync.result is SyncResult.Updated -> stringResource(R.string.updated)
                     sync is SyncUi.Done && sync.result is SyncResult.AppTooOld -> stringResource(R.string.app_too_old)
@@ -109,6 +112,27 @@ fun SettingsScreen(
                 color = PhotoTheme.colors.textSecondary, style = MaterialTheme.typography.bodyMedium,
             )
             OutlinedButton(onClick = onRefresh) { Text(stringResource(R.string.refresh)) }
+            if ((state.sync as? SyncUi.Done)?.result is SyncResult.WaitingForWifi) OutlinedButton(onClick = onDownloadNow, modifier = Modifier.testTag("download-now")) { Text(stringResource(R.string.download_now_mobile)) }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(stringResource(R.string.mobile_data_title), color = PhotoTheme.colors.textPrimary, style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.mobile_data_text), color = PhotoTheme.colors.textSecondary, style = MaterialTheme.typography.bodyMedium)
+                }
+                androidx.compose.material3.Switch(checked = state.allowMobileData, onCheckedChange = onAllowMobileData, modifier = Modifier.testTag("mobile-data-switch"))
+            }
+        }
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val crashLog = remember { dev.bookah.photos.data.CrashLog(java.io.File(context.filesDir, "crash.log")) }
+        var crashText by remember { mutableStateOf(crashLog.read()) }
+        if (crashText != null) {
+            Group(stringResource(R.string.settings_problems)) {
+                Text(stringResource(R.string.crash_text, crashLog.lastTime()?.let { java.time.format.DateTimeFormatter.ofLocalizedDateTime(java.time.format.FormatStyle.MEDIUM).withZone(java.time.ZoneId.systemDefault()).format(it) }.orEmpty()), color = PhotoTheme.colors.textSecondary, style = MaterialTheme.typography.bodyMedium)
+                OutlinedButton(onClick = {
+                    val send = android.content.Intent(android.content.Intent.ACTION_SEND).setType("text/plain").putExtra(android.content.Intent.EXTRA_SUBJECT, "BookahPhotos crash log").putExtra(android.content.Intent.EXTRA_TEXT, crashText!!.takeLast(60_000))
+                    context.startActivity(android.content.Intent.createChooser(send, null).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+                }, modifier = Modifier.testTag("share-crash")) { Text(stringResource(R.string.crash_share)) }
+                OutlinedButton(onClick = { crashLog.clear(); crashText = null }) { Text(stringResource(R.string.crash_clear)) }
+            }
         }
         Group(stringResource(R.string.settings_phone)) {
             Line(

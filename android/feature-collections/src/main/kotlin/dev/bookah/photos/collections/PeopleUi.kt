@@ -79,7 +79,10 @@ internal object FaceCrop {
     }
 }
 
-private val faceCache = object : LruCache<Long, ImageBitmap>(400) {}
+/** Face pictures kept in memory: limited by their size (32 MB), not by how many there are. */
+private val faceCache = object : LruCache<Long, ImageBitmap>(32 * 1024 * 1024) {
+    override fun sizeOf(key: Long, value: ImageBitmap): Int = value.width * value.height * 4
+}
 
 /** The face of a person as a circle. The picture is the same Nextcloud preview the viewer uses, cut around the face box on the phone. */
 @Composable
@@ -127,7 +130,7 @@ fun personTitle(person: Person): String = person.name?.takeIf { it.isNotBlank() 
 
 /** The People page: every person as a face with a name, three in a row. */
 @Composable
-fun PeoplePage(people: PeopleIndex, previews: Previews, loader: ImageLoader, onPerson: (Person) -> Unit, onBack: () -> Unit, bottomPadding: Dp, modifier: Modifier = Modifier, onHidden: () -> Unit = {}) {
+fun PeoplePage(people: PeopleIndex, previews: Previews, loader: ImageLoader, onPerson: (Person) -> Unit, onBack: () -> Unit, bottomPadding: Dp, modifier: Modifier = Modifier, onHidden: () -> Unit = {}, onWhoIsThis: () -> Unit = {}) {
     val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     Box(modifier.fillMaxSize().background(PhotoTheme.colors.background)) {
         LazyVerticalGrid(
@@ -135,6 +138,12 @@ fun PeoplePage(people: PeopleIndex, previews: Previews, loader: ImageLoader, onP
             contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = top + 72.dp, bottom = bottomPadding),
             horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            if (people.unassigned.isNotEmpty()) item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
+                Text(
+                    stringResource(R.string.who_entry, people.unassigned.size), Modifier.fillMaxWidth().clickable(role = Role.Button, onClick = onWhoIsThis).padding(vertical = 10.dp).testTag("who-link"),
+                    style = MaterialTheme.typography.titleMedium, color = PhotoTheme.colors.accent,
+                )
+            }
             if (people.hiddenPeople.isNotEmpty()) item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
                 Text(
                     stringResource(R.string.hidden_people) + " (" + people.hiddenPeople.size + ")", Modifier.fillMaxWidth().clickable(role = Role.Button, onClick = onHidden).padding(vertical = 8.dp).testTag("hidden-link"),

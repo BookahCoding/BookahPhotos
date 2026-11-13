@@ -41,6 +41,8 @@ object OpsFormat {
     fun mergePeople(opId: String, t: String, from: Person, into: Person) = op(opId, t, "merge_people", mapOf("from" to personRef(from), "into" to personRef(into)))
     /** [to] null means "nobody". */
     fun moveFace(opId: String, t: String, face: FaceBox, to: Person?) = op(opId, t, "move_face", mapOf("face" to faceRef(face), "to" to (to?.let { personRef(it) } ?: JsonNull)))
+    /** "Who is this?": a person that does not exist yet, made from faces of nobody. */
+    fun newPerson(opId: String, t: String, name: String, faces: List<FaceBox>) = op(opId, t, "new_person", mapOf("name" to JsonPrimitive(name.trim()), "faces" to JsonArray(faces.map { faceRef(it) })))
     fun notAPerson(opId: String, t: String, face: FaceBox) = op(opId, t, "not_a_person", mapOf("face" to faceRef(face)))
     fun hidePhoto(opId: String, t: String, fileId: Long) = op(opId, t, "hide_photo", mapOf("file_id" to JsonPrimitive(fileId)))
     fun unhidePhoto(opId: String, t: String, fileId: Long) = op(opId, t, "unhide_photo", mapOf("file_id" to JsonPrimitive(fileId)))

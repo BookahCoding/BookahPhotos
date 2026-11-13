@@ -24,6 +24,7 @@ A **person reference** is `{"person": 17, "anchors": [<face reference>, ...]}`: 
 | `name_person` | `person`, `anchors`, `name` | sets the name |
 | `hide_person`, `unhide_person` | `person`, `anchors` | hides or shows the person everywhere |
 | `merge_people` | `from` and `into`, each a person reference | all faces of `from` go to `into` (marked manual); `from` stays as a merged-away id; `into` keeps its name, or takes the name of `from` when it has none |
+| `new_person` | `name`, `faces` (a list of face references) | "Who is this?": a person that did not exist is made from these faces of nobody and named (the faces are marked manual, later faces can join; the person shows in the snapshot once it has 5 faces) |
 | `move_face` | `face`, `to` (a person reference, or `null` for "nobody") | the face belongs to that person (marked manual) |
 | `not_a_person` | `face` | the face is not a person (statue, drawing, poster): removed from all people and never grouped again |
 | `set_cover` | `person`, `anchors`, `face` | the cover picture of the person |

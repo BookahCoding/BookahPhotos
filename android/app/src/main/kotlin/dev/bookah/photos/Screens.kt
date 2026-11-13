@@ -117,6 +117,7 @@ fun HomeScreen(state: UiState, onRefresh: () -> Unit, onSignOut: () -> Unit) {
                     is SyncResult.Offline -> stringResource(R.string.offline)
                     SyncResult.SignedOut -> stringResource(R.string.signed_out)
                     SyncResult.NoIndexYet -> stringResource(R.string.no_snapshot_yet)
+                    is SyncResult.WaitingForWifi -> stringResource(R.string.waiting_for_wifi, (r.sizeBytes / 1_000_000).toInt())
                 }
                 Text(text, style = MaterialTheme.typography.bodyMedium, color = PhotoTheme.colors.textSecondary)
             }

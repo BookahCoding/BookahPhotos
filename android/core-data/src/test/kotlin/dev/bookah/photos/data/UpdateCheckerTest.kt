@@ -27,25 +27,27 @@ class UpdateCheckerTest {
         assertEquals(0, UpdateChecker.compareVersions("0.0.1-spike", "0.0.1"))
     }
 
-    @Test fun `a newer release is found with its apk, drafts are ignored`() = runBlocking {
-        server.enqueue(MockResponse().setBody("[${release("v0.9.0", draft = true)},${release("v0.8.0", false, "BookahPhotos-0.8.0.apk" to "https://example/a.apk")},${release("v0.7.0")}]"))
+    @Test fun `a newer release is found with its apk`() = runBlocking {
+        server.enqueue(MockResponse().setBody(release("v0.8.0", false, "BookahPhotos-0.8.0.apk" to "https://example/a.apk")))
         val u = checker().newerThan("0.7.0")!!
         assertEquals("0.8.0", u.version)
         assertEquals("https://example/a.apk", u.apkUrl)
-        assertEquals("/repos/owner/app/releases?per_page=15", server.takeRequest().path)
+        assertEquals("/repos/owner/app/releases/latest", server.takeRequest().path)                // GitHub's own "latest": test builds published later cannot hide it
     }
 
-    @Test fun `test builds are never offered, only real releases, and 1_0_0 is newer than every 0_x`() = runBlocking {
-        server.enqueue(MockResponse().setBody("[${release("v1.1.0-rc", false, pre = true)},${release("v1.0.0", false, "BookahPhotos-1.0.0.apk" to "https://example/b.apk")},${release("v0.19.1", pre = true)}]"))
+    @Test fun `1_0_0 is newer than every 0_x and nothing newer means no update`() = runBlocking {
+        server.enqueue(MockResponse().setBody(release("v1.0.0", false, "BookahPhotos-1.0.0.apk" to "https://example/b.apk")))
         val u = checker().newerThan("0.19.1")!!
         assertEquals("1.0.0", u.version); assertEquals("https://example/b.apk", u.apkUrl)
-        server.enqueue(MockResponse().setBody("[${release("v1.1.0", pre = true)},${release("v1.0.0")}]"))
-        assertNull(checker().newerThan("1.0.0"))                                               // the pre-release 1.1.0 does not count
+        server.enqueue(MockResponse().setBody(release("v1.0.0")))
+        assertNull(checker().newerThan("1.0.0"))
+        server.enqueue(MockResponse().setBody(release("v1.0.0")))
+        assertNull(checker().newerThan("1.0.1"))
     }
 
-    @Test fun `nothing newer means no update`() = runBlocking {
-        server.enqueue(MockResponse().setBody("[${release("v0.7.0")},${release("v0.6.1")}]"))
-        assertNull(checker().newerThan("0.7.0"))
+    @Test fun `a pre-release or draft is never offered`() = runBlocking {
+        server.enqueue(MockResponse().setBody(release("v2.0.0", pre = true))); assertNull(checker().newerThan("1.0.0"))
+        server.enqueue(MockResponse().setBody(release("v2.0.0", draft = true))); assertNull(checker().newerThan("1.0.0"))
     }
 
     @Test fun `a private repository or a GitHub error is an error, not a made-up update`() {

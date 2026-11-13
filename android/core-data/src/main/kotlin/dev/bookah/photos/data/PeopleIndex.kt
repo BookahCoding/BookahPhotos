@@ -21,7 +21,8 @@ class Person(
  * The people of a snapshot (with the reader's own changes on top, see [PeopleOverlay]): named people first (most photos first), then the unnamed groups
  * (most photos first). Hidden people are kept apart in [hiddenPeople].
  */
-class PeopleIndex(all: List<Person>) {
+class PeopleIndex(all: List<Person>, /** Faces that belong to nobody yet (the "Who is this?" page), clearest first. */ unassigned: List<FaceBox> = emptyList()) {
+    val unassigned: List<FaceBox> = unassigned.sortedByDescending { it.quality }
     private val order = compareByDescending<Person> { !it.name.isNullOrBlank() }.thenByDescending { it.photoCount }.thenBy { it.id }
     val people: List<Person> = all.filter { !it.hidden }.sortedWith(order)
     val hiddenPeople: List<Person> = all.filter { it.hidden }.sortedWith(order)
@@ -58,11 +59,16 @@ object PeopleReader {
                 while (c.moveToNext()) rows.add(Row(c.getLong(0), c.getString(1)?.trim()?.ifBlank { null }, if (c.isNull(2)) -1L else c.getLong(2), c.getInt(3) != 0))
             }
             if (rows.isEmpty()) return@use PeopleIndex.EMPTY
+            // (a snapshot with people always has the faces table)
             val faces = HashMap<Long, ArrayList<FaceBox>>()
             db.rawQuery("SELECT f.id, f.asset_id, f.person_id, f.x, f.y, f.w, f.h, COALESCE(f.quality, 0) FROM faces f JOIN assets a ON a.id = f.asset_id WHERE f.person_id IS NOT NULL", null).use { c ->
                 while (c.moveToNext()) faces.getOrPut(c.getLong(2)) { ArrayList() }.add(FaceBox(c.getLong(0), c.getLong(1), c.getDouble(3), c.getDouble(4), c.getDouble(5), c.getDouble(6), c.getFloat(7)))
             }
-            PeopleIndex(rows.mapNotNull { r -> faces[r.id]?.let { make(r.id, r.name, r.cover, r.hidden, it) } })
+            val nobody = ArrayList<FaceBox>()
+            db.rawQuery("SELECT f.id, f.asset_id, f.x, f.y, f.w, f.h, COALESCE(f.quality, 0) FROM faces f JOIN assets a ON a.id = f.asset_id WHERE f.person_id IS NULL", null).use { c ->
+                while (c.moveToNext()) nobody.add(FaceBox(c.getLong(0), c.getLong(1), c.getDouble(2), c.getDouble(3), c.getDouble(4), c.getDouble(5), c.getFloat(6)))
+            }
+            PeopleIndex(rows.mapNotNull { r -> faces[r.id]?.let { make(r.id, r.name, r.cover, r.hidden, it) } }, nobody)
         }
     }.getOrDefault(PeopleIndex.EMPTY)
 

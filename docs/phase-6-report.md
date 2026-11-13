@@ -99,3 +99,36 @@ Chris said Duplicates helped a lot, but it also showed almost all the wedding ph
 - **Why the wedding photos showed:** 840 of the 917 groups were **scanned TIFF film frames** ("a scanned-film folder", 1,725 photos). An uncompressed TIFF has a size that depends only on its dimensions, so two different scans made in the same second have exactly the same size, time and dimensions: not duplicates. **Fixed in the indexer:** TIFF and BMP are never grouped by size (compressed formats only). Duplicates are now only **the 77 JPEG groups** that really are the same picture saved twice. Tested (two scans of different frames are not grouped).
 - **Pairs staying after deleting one copy:** the phone showed the photos the snapshot listed; after a delete the surviving copy stayed alone in the list. **Fixed in the app:** a group with fewer than two photos still in the library disappears at once (tested). And **yes, the indexer refreshes it**: the daily job (or my run) notices the deleted files, and the next snapshot has no such group (generation 21, made right after his deletions, already has 24,468 photos instead of 24,614).
 - **Generation 21** (with the fix) is published; tap Refresh in Settings to get it.
+
+---
+
+# 1.0.1 (test build): the advisor's review of 1.0.0, fixed
+
+Chris installed 1.0.0 and asked for an independent review. What was checked in the code and what was done (Chris said: all bugs, the mobile-data switch, the crash log, and Who is this).
+
+## Bugs fixed
+- **The map did not pause or free memory:** its pause, resume and low-memory calls were empty or missing. All forwarded now.
+- **The update check could miss a final release** after many test builds (it read only the 15 newest). It now asks GitHub for the **latest release** (never a pre-release or draft).
+- **Face pictures** were kept by number (400); now limited to 32 MB by size.
+- **"On this day"** could stay stale after midnight: refreshed every time the app comes to the front.
+- **A cancelled album action** was reported as "Nextcloud could not be reached": cancellation is passed on now.
+- **A first name in a note of the public repo** (`HANDOFF.md`): removed.
+- **Joining people after a rebuild by anchor faces:** I had loosened the rule to two agreeing faces; two faces that moved could point at the wrong person. **Now three are needed** (tested with two misleading faces, and with the correct case of three). Checked again on a copy of the real database: all 40 names still come back after a rebuild; 4 of the 32 phone corrections cannot be placed again (their groups no longer exist after regrouping), the same as with the first rule.
+
+## The mobile data switch (off by default)
+**Settings > "Use mobile data for big downloads"** (off). While off, on mobile data (or any network Android calls metered, also while Tailscale is on) the small manifest is still checked, but the **index (about 45 MB, new almost every day) and the search model (158 MB) wait for Wi-Fi**: the app says "A new index (45 MB) is waiting for Wi-Fi" (a note in Library and Settings) with a **Download now on mobile data** button for one time. Turning the switch on lets it download.
+
+## Crash log
+`BookahApp` writes any uncaught error (time, version, phone, stack) to a file on the phone (the last 5, small). **Settings > Problems** appears only when there is one, with **Share the report** (you choose where it goes; nothing is ever sent by the app) and **Delete the report**.
+
+## "Who is this?"
+- **People page > "Who is this? (N faces)":** the faces nobody has named (about 16,000), clearest first. Tap faces (or press and hold and slide) to select the faces of one person, then **Who is this?**: pick someone who exists (searchable list), or **A new person...** (type a name; if the name exists you are asked "Same person as X?"), or **Not a person** (a statue, a picture on a wall).
+- **The phone shows it at once** (the faces leave the list; a new person appears in People with a temporary id). New op `new_person` (indexer: makes the person from those faces, marked manual so more faces can join; a person shows in the snapshot once it has 5 faces, so give a new person several faces).
+- Tested: the indexer op (applied, skipped and retried when the faces are not found); the golden file (15 ops) is identical on both sides; overlay logic (assign, new person, more faces before the indexer has seen it, not a person, taking a face from somebody puts it in the list, hidden photos); screens (select, assign, new person, same-person question, clear, not a person, empty page, the link).
+
+## Not done (honest)
+- **Tests of the app's controllers** (people, favourites, albums, search, and the hide/relock glue in `Home`) are still missing: the app module has no JVM test setup, and the logic behind them is tested in `core-data`. To add real controller tests the controllers need a small refactor (a store and a clock they are given).
+- Speed: Chris's measurement on 1.0.0: **start to Library 8.8 s** (the target is 1.5 s), building the library 32 ms, scrolling 0 slow frames. See below.
+
+## The speed result Chris sent (1.0.0, screenshot)
+Start to Library **8,839 ms** (target 1.5 s). Building the library takes only 32 ms for 24,538 photos and scrolling is perfect (720 frames, 0.0% slow), so the 8.8 s is **something before the library appears**: most likely the first run after install (the baseline profile is compiled in the background after the first start) or the start-up reading of the snapshot's lists. **To be measured properly next:** a second measurement after a few starts, and I will time each start-up step.

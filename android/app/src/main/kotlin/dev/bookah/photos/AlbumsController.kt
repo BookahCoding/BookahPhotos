@@ -140,6 +140,8 @@ class AlbumsController(
                 _busy.value = AlbumsBusy(0, 0)
                 try {
                     block()
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
                 } catch (e: SnapshotSync.UnauthorizedException) {
                     _message.value = AlbumsMessage.Failed(0)
                 } catch (e: Exception) {

@@ -51,6 +51,8 @@ data class UiState(
     val sync: SyncUi = SyncUi.Idle,
     val info: SnapshotInfo? = null,
     val library: LibraryIndex? = null,
+    /** The reader allows big downloads (the index, the search model) on mobile data. Off by default. */
+    val allowMobileData: Boolean = false,
     /** Photos that are the same picture saved more than once: asset id -> group. */
     val duplicates: Map<Long, Long> = emptyMap(),
     /** The photos the reader hid (shown only behind the unlock prompt). */
@@ -109,7 +111,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val state: StateFlow<UiState> = _state.asStateFlow()
 
     /** Search by content on the phone: the picture vectors, the tags and the search model. */
-    val search = SearchController(app, viewModelScope, http) { _state.value.session }
+    val search = SearchController(app, viewModelScope, http) { _state.value.session }.also { it.bigDownloadAllowed = { bigDownloadsAllowed() } }
 
     /** People and the reader's corrections of them (names, merges, hiding), sent to BookahPC as op files. */
     val people = PeopleController(app, viewModelScope, http) { _state.value.session }
@@ -159,7 +161,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     init {
         viewModelScope.launch {
             val session = sessions.load()
-            _state.update { it.copy(loaded = true, session = session, info = currentInfo(), lists = listsCache.read()) }
+            _state.update { it.copy(loaded = true, session = session, info = currentInfo(), lists = listsCache.read(), allowMobileData = settings.getBoolean("mobile_data", false)) }
             launch { prefsStore.flow.collect { p -> _state.update { it.copy(prefs = p) } } }
             // hiding and showing photos is applied at once, before BookahPC has seen the correction
             launch { people.state.map { it.hiddenPhotoDelta }.distinctUntilChanged().collect { d -> hiddenDelta = d; if (snapshotRows.isNotEmpty() || hiddenSnapshotRows.isNotEmpty()) rebuild() } }
@@ -515,12 +517,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _state.update { it.copy(signIn = SignInUi.Idle) }
     }
 
-    fun sync() {
+    /** [overrideMobile]: the reader pressed "Download now" while on mobile data: this one time the big download is allowed. */
+    fun sync(overrideMobile: Boolean = false) {
         val session = _state.value.session ?: return
         if (syncJob?.isActive == true) return
         syncJob = viewModelScope.launch {
             _state.update { it.copy(sync = SyncUi.Checking) }
-            val result = SnapshotSync(http, session, store).sync { done, total ->
+            val result = SnapshotSync(http, session, store).sync(allowBigDownload = overrideMobile || bigDownloadsAllowed()) { done, total ->
                 if (total > 0) _state.update { it.copy(sync = SyncUi.Downloading((done * 100 / total).toInt())) }
             }
             if (result is SyncResult.SignedOut) {
@@ -533,6 +536,17 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             if (result is SyncResult.Updated) loadLibrary()
             if (result is SyncResult.Updated || result is SyncResult.UpToDate) { refreshLists(); refreshNewFiles(); search.ensureModelChecked(); favourites.flush() }
         }
+    }
+
+    private val settings = app.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
+
+    /** Wi-Fi (or any network that is not metered), or the reader said mobile data is fine. */
+    fun bigDownloadsAllowed(): Boolean = _state.value.allowMobileData || !NetworkCheck.isMetered(getApplication())
+
+    fun setAllowMobileData(on: Boolean) {
+        settings.edit().putBoolean("mobile_data", on).apply()
+        _state.update { it.copy(allowMobileData = on) }
+        if (on) sync()                                                             // a download that was waiting for Wi-Fi may start now
     }
 
     fun signOut() {

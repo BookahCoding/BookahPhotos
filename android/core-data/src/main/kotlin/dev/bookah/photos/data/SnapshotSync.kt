@@ -17,6 +17,8 @@ sealed interface SyncResult {
     /** The signed-in app password was refused (revoked in Nextcloud). */
     data object SignedOut : SyncResult
     data object NoIndexYet : SyncResult
+    /** A newer index exists but the phone is on mobile data and the reader has not allowed big downloads there. [sizeBytes] is what it would download. */
+    data class WaitingForWifi(val generation: Long, val sizeBytes: Long) : SyncResult
 }
 
 /** Checks `BookahPhotos/index/manifest.json` and downloads a newer snapshot when the generation changed. */
@@ -25,12 +27,14 @@ class SnapshotSync(private val http: OkHttpClient, private val session: Session,
     private fun indexUrl(name: String) = session.davRoot().newBuilder()
         .addPathSegment("BookahPhotos").addPathSegment("index").addPathSegment(name).build()
 
-    suspend fun sync(onProgress: (done: Long, total: Long) -> Unit = { _, _ -> }): SyncResult = withContext(Dispatchers.IO) {
+    /** [allowBigDownload] false (mobile data, not allowed): a newer index is reported as [SyncResult.WaitingForWifi] and not downloaded. Checking the small manifest is always done. */
+    suspend fun sync(allowBigDownload: Boolean = true, onProgress: (done: Long, total: Long) -> Unit = { _, _ -> }): SyncResult = withContext(Dispatchers.IO) {
         val have = store.currentGeneration() != null
         try {
             val manifest = fetchManifest() ?: return@withContext SyncResult.NoIndexYet
             if (manifest.schemaMajor > Manifest.SUPPORTED_MAJOR) return@withContext SyncResult.AppTooOld(manifest.schemaMajor)
             if (store.currentGeneration() == manifest.generation) return@withContext SyncResult.UpToDate(manifest.generation)
+            if (!allowBigDownload) return@withContext SyncResult.WaitingForWifi(manifest.generation, manifest.size)
             download(manifest, onProgress)
             SyncResult.Updated(manifest.generation)
         } catch (e: UnauthorizedException) {

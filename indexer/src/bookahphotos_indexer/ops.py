@@ -21,7 +21,7 @@ log = logging.getLogger("bookahphotos.ops")
 OPS_DIR = "BookahPhotos/ops"
 APPLIED_DIR = OPS_DIR + "/applied"
 IOU_MIN = 0.5
-TYPES = {"name_person", "merge_people", "move_face", "not_a_person", "hide_person", "unhide_person", "set_cover", "hide_photo", "unhide_photo", "unwanted_memory", "wanted_memory"}
+TYPES = {"name_person", "merge_people", "move_face", "not_a_person", "hide_person", "unhide_person", "set_cover", "hide_photo", "unhide_photo", "unwanted_memory", "wanted_memory", "new_person"}
 
 
 # ---- faces and people by reference ----
@@ -102,8 +102,9 @@ def resolve_person(state: State, ref: dict | None) -> int | None:
         best, n = votes.most_common(1)[0]
         voted = sum(votes.values())
         # enough of the anchors agree. After a rebuild some anchor faces belong to nobody (groups form differently), so the share is counted among the anchors that
-        # belong to somebody, as long as at least two of them agree (a single vote is never enough on its own, unless it is the only anchor)
-        if n * 2 >= resolvable or (n >= 2 and n * 2 > voted) or (resolvable == 1 and n == 1):
+        # belong to somebody, as long as at least THREE of them agree (two faces that moved could point at the wrong person: a name or a join must never land on
+        # somebody else; a lone anchor is accepted only when it is the only one)
+        if n * 2 >= resolvable or (n >= 3 and n * 2 > voted) or (resolvable == 1 and n == 1):
             if isinstance(pid, int) and pid != best:
                 if _exists(state, pid):
                     _swap(state, best, pid)
@@ -181,6 +182,15 @@ def apply_op(state: State, op: Op) -> str:
                 result = "skipped: person not found"
             else:
                 _set_face(state, f, p)
+        elif op.type == "new_person":
+            # "Who is this?": faces of nobody are named as a person that did not exist (the faces become that person's, marked manual; later faces can join)
+            ids = [fid for fid in (find_face(state, ref) for ref in (b.get("faces") or []) if isinstance(ref, dict)) if fid is not None]
+            if not ids:
+                result = "skipped: faces not found"
+            else:
+                cur = state.db.execute("INSERT INTO persons(name, created) VALUES (?,?)", (str(b.get("name", "")).strip()[:100] or None, time.time()))
+                for fid in ids:
+                    _set_face(state, fid, cur.lastrowid)
         elif op.type == "not_a_person":
             f = find_face(state, b.get("face") or {})
             if f is None:

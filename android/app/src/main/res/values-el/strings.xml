@@ -125,4 +125,13 @@
     <string name="album_failed_partly">Το Nextcloud σταμάτησε να απαντά μετά από %1$d. Τα υπόλοιπα δεν άλλαξαν.</string>
     <string name="album_progress">%1$d από %2$d</string>
     <string name="album_working">Επεξεργασία του άλμπουμ…</string>
+    <string name="mobile_data_title">Χρήση δεδομένων κινητής για μεγάλες λήψεις</string>
+    <string name="mobile_data_text">Κλειστό: το ευρετήριο (περίπου 45 MB, νέο σχεδόν κάθε μέρα) και το μοντέλο αναζήτησης (158 MB) κατεβαίνουν μόνο με Wi-Fi.</string>
+    <string name="waiting_for_wifi">Ένα νέο ευρετήριο (%1$d MB) περιμένει Wi-Fi.</string>
+    <string name="download_now_mobile">Λήψη τώρα με δεδομένα κινητής</string>
+    <string name="mobile_data_off">Είναι μεγάλη λήψη και τα δεδομένα κινητής είναι κλειστά. Συνδέσου σε Wi-Fi ή επίτρεψέ τα στις Ρυθμίσεις.</string>
+    <string name="settings_problems">Προβλήματα</string>
+    <string name="crash_text">Η εφαρμογή έκλεισε απροσδόκητα (τελευταία φορά: %1$s). Η αναφορά μένει σε αυτό το κινητό και δεν στάλθηκε πουθενά. Μπορείς να την μοιραστείς εσύ. Μπορεί να περιέχει τη διεύθυνση του Nextcloud σου, γι’ αυτό δες την πρώτα.</string>
+    <string name="crash_share">Κοινοποίηση της αναφοράς</string>
+    <string name="crash_clear">Διαγραφή της αναφοράς</string>
 </resources>

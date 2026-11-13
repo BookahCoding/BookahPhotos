@@ -95,6 +95,23 @@ class PeopleController(
     fun unhide(p: Person) = submit { id, t -> OpsFormat.unhidePerson(id, t, p) }
     fun setCover(p: Person, face: FaceBox) = submit { id, t -> OpsFormat.setCover(id, t, p, face) }
     fun moveFace(face: FaceBox, to: Person?) = submit { id, t -> OpsFormat.moveFace(id, t, face, to) }
+    /** "Who is this?": gives faces of nobody to a person who exists (one correction per face, sent together). */
+    fun assignFaces(faces: List<FaceBox>, to: Person) = submitBatch(faces.map { f -> { id: String, t: String -> OpsFormat.moveFace(id, t, f, to) } })
+
+    /** "Who is this?": a new person with this name, made from faces of nobody. */
+    fun newPerson(name: String, faces: List<FaceBox>) = submit { id, t -> OpsFormat.newPerson(id, t, name, faces) }
+
+    /** Faces that are not people (a statue, a picture on a wall). */
+    fun notAPerson(faces: List<FaceBox>) = submitBatch(faces.map { f -> { id: String, t: String -> OpsFormat.notAPerson(id, t, f) } })
+
+    private fun submitBatch(builders: List<(String, String) -> JsonObject>) {
+        if (builders.isEmpty()) return
+        scope.launch(Dispatchers.IO) {
+            stateLock.withLock { for (b in builders) store.add(b(newId(), now())); republish() }
+            flush()
+        }
+    }
+
     /** Hides photos of Nextcloud (not phone-only photos, which have a negative id and no file in Nextcloud). */
     fun hidePhotos(ids: LongArray) = submitMany(ids.filter { it > 0 }) { id, t, fileId -> OpsFormat.hidePhoto(id, t, fileId) }
     fun unhidePhotos(ids: LongArray) = submitMany(ids.filter { it > 0 }) { id, t, fileId -> OpsFormat.unhidePhoto(id, t, fileId) }

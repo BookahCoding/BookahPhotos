@@ -48,6 +48,7 @@ class OpsTest {
             OpsFormat.hidePhoto(id(12), t(12), 21),
             OpsFormat.hidePhoto(id(13), t(13), 22),
             OpsFormat.unhidePhoto(id(14), t(14), 21),
+            OpsFormat.newPerson(id(15), t(15), "Νέα \"Έλα\"", listOf(face(12))),
         ).joinToString("\n") { OpsFormat.line(it) } + "\n"
         val golden = javaClass.classLoader!!.getResourceAsStream("ops-golden.jsonl")!!.readBytes().toString(Charsets.UTF_8)
         assertEquals(golden, lines)

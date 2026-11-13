@@ -40,6 +40,9 @@ class SearchController(
     private val session: () -> Session?,
 ) : SearchActions {
     private val modelStore = ModelStore(File(app.filesDir, "models"))
+
+    /** Whether a big download may start now (Wi-Fi, or mobile data allowed in Settings). Set by the app. */
+    var bigDownloadAllowed: () -> Boolean = { true }
     private val prefs = app.getSharedPreferences("search", android.content.Context.MODE_PRIVATE)
 
     private val _ui = MutableStateFlow(SearchUi(recents = loadRecents()))
@@ -108,6 +111,7 @@ class SearchController(
     override fun downloadModel() {
         val s = session() ?: return
         if (downloadJob?.isActive == true) return
+        if (!bigDownloadAllowed()) { _ui.update { it.copy(model = ModelUi.Failed(app.getString(R.string.mobile_data_off))) }; return }
         downloadJob = scope.launch {
             _ui.update { it.copy(model = ModelUi.Checking) }
             try {

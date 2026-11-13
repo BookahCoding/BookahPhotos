@@ -63,6 +63,7 @@ private sealed interface Page {
     data object Reorder : Page
     data object People : Page
     data object HiddenPeople : Page
+    data object WhoIsThis : Page
     data object Memories : Page
     data object Trips : Page
     data object Hidden : Page
@@ -96,6 +97,7 @@ fun SignedInHome(
     val peopleState by vm.people.state.collectAsStateWithLifecycle()
     val people = peopleState.index
     val greek = locale.language == "el"
+    var today by remember { mutableStateOf(java.time.LocalDate.now()) }            // brought up to date every time the app comes to the front
     var hideRequest by remember { mutableStateOf<LongArray?>(null) }
     var hideDoneTick by remember { mutableStateOf(0) }
     var albumTick by remember { mutableStateOf(0) }
@@ -184,6 +186,7 @@ fun SignedInHome(
     val owner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     androidx.compose.runtime.DisposableEffect(owner) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_START) today = java.time.LocalDate.now()
             if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP) {
                 stack = stack.filterNot { it is Page.Hidden }
                 if (viewer?.hidden == true) viewer = null
@@ -206,12 +209,14 @@ fun SignedInHome(
         }
     }
 
+    val waiting = (state.sync as? SyncUi.Done)?.result as? SyncResult.WaitingForWifi
     val offline = (state.sync as? SyncUi.Done)?.result is SyncResult.Offline
     val banner: (@Composable () -> Unit)? =
-        if (offline || state.localAccess != LocalAccess.Full) ({
+        if (offline || waiting != null || state.localAccess != LocalAccess.Full) ({
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (state.localAccess != LocalAccess.Full) LocalAccessBanner(state.localAccess, onAllowLocal, onOpenAppSettings)
                 if (offline) OfflineBanner(onRetry = vm::sync)
+                if (waiting != null) Notice(stringResource(R.string.waiting_for_wifi, (waiting.sizeBytes / 1_000_000).toInt()), stringResource(R.string.download_now_mobile)) { vm.sync(overrideMobile = true) }
             }
         }) else null
     val tabLabels = Triple(stringResource(R.string.library), stringResource(R.string.collections), stringResource(R.string.search))
@@ -220,9 +225,9 @@ fun SignedInHome(
     val personActions = remember(vm) {
         dev.bookah.photos.collections.PersonActions(onName = vm.people::namePerson, onMerge = vm.people::mergeInto, onHide = vm.people::hide, onUnhide = vm.people::unhide)
     }
+    val whoActions = remember(vm) { dev.bookah.photos.collections.WhoIsActions(onAssign = vm.people::assignFaces, onNewPerson = vm.people::newPerson, onNotAPerson = vm.people::notAPerson) }
     val faceActions = remember(vm) { dev.bookah.photos.collections.FaceActions(onCover = vm.people::setCover, onMove = vm.people::moveFace, onNotAPerson = vm.people::notAPerson) }
     val greekOrEnglishMap = stringResource(dev.bookah.photos.map.R.string.map)
-    val today = remember(shown) { java.time.LocalDate.now() }
     val memoryRow = remember(state.memories, people, peopleState.unwantedMemories, shown) { state.memories.forRow(today, peopleState.unwantedMemories, people, { shown.indexOfId(it) != null }) }
     val memoryAll = remember(state.memories, people, peopleState.unwantedMemories, shown) { state.memories.forAll(today, peopleState.unwantedMemories, people, { shown.indexOfId(it) != null }) }
     val tripList = remember(memoryAll) { memoryAll.filter { it.type == dev.bookah.photos.data.Memory.TYPE_TRIP } }
@@ -276,7 +281,7 @@ fun SignedInHome(
                 state, loader, onBack = { stack = stack.dropLast(1) }, onRefresh = vm::sync, onSignOut = vm::signOut, onAllowLocal = onAllowLocal,
                 onCheckUpdates = vm::checkUpdates, onOpenUrl = onOpenUrl, bench = bench,
                 onMeasureScrolling = { stack = emptyList(); tab = Tab.Library; showTabs = false; source = Source.All; benchRequested++ },
-                searchUi = searchUi, modelBytes = vm.search.modelBytesOnPhone(), people = peopleState, onDownloadModel = vm.search::downloadModel, onDeleteModel = vm.search::deleteModel,
+                searchUi = searchUi, modelBytes = vm.search.modelBytesOnPhone(), people = peopleState, onAllowMobileData = vm::setAllowMobileData, onDownloadNow = { vm.sync(overrideMobile = true) }, onDownloadModel = vm.search::downloadModel, onDeleteModel = vm.search::deleteModel,
             )
             Page.Search -> SearchPage(
                 searchUi, shown, previews, loader, vm.search, greek = locale.language == "el",
@@ -289,7 +294,10 @@ fun SignedInHome(
             )
             Page.People -> dev.bookah.photos.collections.PeoplePage(
                 people, previews, loader, onPerson = openPerson, onBack = { stack = stack.dropLast(1) }, bottomPadding = barClearance,
-                onHidden = { stack = stack + Page.HiddenPeople },
+                onHidden = { stack = stack + Page.HiddenPeople }, onWhoIsThis = { stack = stack + Page.WhoIsThis },
+            )
+            Page.WhoIsThis -> dev.bookah.photos.collections.WhoIsThisPage(
+                people, previews, loader, whoActions, onBack = { stack = stack.dropLast(1) }, bottomPadding = barClearance,
             )
             Page.Map -> {
                 val points = remember(state.places, shown) {

@@ -125,4 +125,13 @@
     <string name="album_failed_partly">Nextcloud stopped answering after %1$d. The rest was not changed.</string>
     <string name="album_progress">%1$d of %2$d</string>
     <string name="album_working">Working on the album…</string>
+    <string name="mobile_data_title">Use mobile data for big downloads</string>
+    <string name="mobile_data_text">Off: the index (about 45 MB, new almost every day) and the search model (158 MB) are only downloaded on Wi-Fi.</string>
+    <string name="waiting_for_wifi">A new index (%1$d MB) is waiting for Wi-Fi.</string>
+    <string name="download_now_mobile">Download now on mobile data</string>
+    <string name="mobile_data_off">This is a big download and mobile data is off. Connect to Wi-Fi, or allow mobile data in Settings.</string>
+    <string name="settings_problems">Problems</string>
+    <string name="crash_text">The app closed unexpectedly (last time: %1$s). The report stays on this phone; nothing was sent. You can share it by hand. It may contain your Nextcloud address, so look at it first.</string>
+    <string name="crash_share">Share the report</string>
+    <string name="crash_clear">Delete the report</string>
 </resources>

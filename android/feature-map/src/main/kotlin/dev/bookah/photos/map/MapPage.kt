@@ -110,17 +110,26 @@ fun MapPage(
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
                 Lifecycle.Event.ON_START -> mapView.onStart()
-                Lifecycle.Event.ON_RESUME -> {}
-                Lifecycle.Event.ON_PAUSE -> {}
+                Lifecycle.Event.ON_RESUME -> mapView.onResume()
+                Lifecycle.Event.ON_PAUSE -> mapView.onPause()
                 Lifecycle.Event.ON_STOP -> mapView.onStop()
                 else -> {}
             }
         }
         owner.lifecycle.addObserver(observer)
         if (owner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) mapView.onStart()
+        if (owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) mapView.onResume()
+        // when the phone is short of memory the map engine is told, so it can let go of what it can
+        val memory = object : android.content.ComponentCallbacks2 {
+            override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {}
+            override fun onLowMemory() { mapView.onLowMemory() }
+            override fun onTrimMemory(level: Int) { if (level >= android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW) mapView.onLowMemory() }
+        }
+        context.registerComponentCallbacks(memory)
         onDispose {
             owner.lifecycle.removeObserver(observer)
-            mapView.onStop(); mapView.onDestroy()
+            context.unregisterComponentCallbacks(memory)
+            mapView.onPause(); mapView.onStop(); mapView.onDestroy()
         }
     }
 

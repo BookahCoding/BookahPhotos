@@ -55,6 +55,25 @@ class SnapshotSyncTest {
         assertTrue(first.getHeader("Authorization")!!.startsWith("Basic "))
     }
 
+    @Test fun `on mobile data without permission a newer index waits for Wi-Fi and nothing big is downloaded`() {
+        val body = ByteArray(5_000) { 3 }
+        server.enqueue(MockResponse().setBody(manifestJson(4, body)))
+        val r = runBlocking { SnapshotSync(Http.newClient(), session, store).sync(allowBigDownload = false) }
+        assertEquals(SyncResult.WaitingForWifi(4, body.size.toLong()), r)
+        assertNull(store.currentGeneration())
+        assertEquals(1, server.requestCount)                                                  // only the small manifest was asked for
+        // later, with permission (or on Wi-Fi), it downloads
+        server.enqueue(MockResponse().setBody(manifestJson(4, body))); enqueueBody(body)
+        assertEquals(SyncResult.Updated(4), runBlocking { SnapshotSync(Http.newClient(), session, store).sync(allowBigDownload = true) })
+    }
+
+    @Test fun `a current index on mobile data is simply up to date`() {
+        val body = ByteArray(1000) { 9 }
+        server.enqueue(MockResponse().setBody(manifestJson(2, body))); enqueueBody(body); assertEquals(SyncResult.Updated(2), sync())
+        server.enqueue(MockResponse().setBody(manifestJson(2, body)))
+        assertEquals(SyncResult.UpToDate(2), runBlocking { SnapshotSync(Http.newClient(), session, store).sync(allowBigDownload = false) })
+    }
+
     @Test fun `same generation downloads nothing`() {
         val body = ByteArray(1000) { 7 }
         server.enqueue(MockResponse().setBody(manifestJson(1, body))); enqueueBody(body)

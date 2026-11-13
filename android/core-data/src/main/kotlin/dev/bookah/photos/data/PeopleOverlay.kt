@@ -17,6 +17,7 @@ import kotlinx.serialization.json.longOrNull
  */
 object PeopleOverlay {
     private const val IOU_MIN = 0.5
+    private const val NOBODY = Long.MIN_VALUE
 
     private class W(val id: Long, var name: String?, var hidden: Boolean, var cover: Long, var faces: MutableList<FaceBox>)
 
@@ -28,6 +29,9 @@ object PeopleOverlay {
         val byAsset = HashMap<Long, MutableList<Pair<FaceBox, Long>>>()
         for (p in base.people + base.hiddenPeople) for (f in p.faces) byAsset.getOrPut(f.assetId) { ArrayList() }.add(f to p.id)
         val moved = HashMap<Long, Long?>()          // faces moved by ops: face id -> person id (null = nobody)
+        val unassigned = LinkedHashMap<Long, FaceBox>().also { m -> base.unassigned.forEach { m[it.id] = it } }       // faces of nobody, as they are after the ops
+        for (f in base.unassigned) byAsset.getOrPut(f.assetId) { ArrayList() }.add(f to NOBODY)
+        var localIds = 0L                                                                                           // ids for people made on this phone: -1, -2 ...
 
         fun chain(id: Long): Long {
             var c = id
@@ -56,7 +60,7 @@ object PeopleOverlay {
             }
             return best
         }
-        fun holder(f: FaceBox): Long? = if (f.id in moved) moved[f.id]?.let { chain(it) } else byAsset[f.assetId]?.firstOrNull { it.first.id == f.id }?.second?.let { chain(it) }
+        fun holder(f: FaceBox): Long? = if (f.id in moved) moved[f.id]?.let { chain(it) } else byAsset[f.assetId]?.firstOrNull { it.first.id == f.id }?.second?.takeIf { it != NOBODY }?.let { chain(it) }
         fun resolve(ref: JsonObject?): W? {
             ref ?: return null
             val pid = ref["person"]?.jsonPrimitive?.longOrNull
@@ -74,7 +78,7 @@ object PeopleOverlay {
             val best = votes.maxByOrNull { it.value } ?: return null
             return if (best.value * 2 >= resolvable) all[best.key] else null
         }
-        fun detach(f: FaceBox) { all.values.forEach { w -> w.faces.removeAll { it.id == f.id } } }
+        fun detach(f: FaceBox) { all.values.forEach { w -> w.faces.removeAll { it.id == f.id } }; unassigned.remove(f.id) }
 
         for (op in ops.sortedBy { it.json["t"]?.jsonPrimitive?.content.orEmpty() }) {
             val j = op.json
@@ -107,15 +111,27 @@ object PeopleOverlay {
                         if (f != null && (!wantsPerson || to != null)) {
                             detach(f)
                             to?.faces?.add(f)
+                            if (to == null) unassigned[f.id] = f                                               // taken from somebody: now nobody's
                             moved[f.id] = to?.id
                         }
                     }
                     "not_a_person" -> findFace(j["face"] as? JsonObject)?.let { f -> detach(f); moved[f.id] = null }
+                    "new_person" -> {
+                        val faces = j["faces"]?.jsonArray.orEmpty().mapNotNull { findFace(it as? JsonObject) }
+                        if (faces.isNotEmpty()) {
+                            val id = --localIds
+                            faces.forEach { detach(it); moved[it.id] = id }
+                            all[id] = W(id, j["name"]?.jsonPrimitive?.content?.trim()?.ifBlank { null }, false, faces.first().id, faces.toMutableList())
+                        }
+                    }
                 }
             }
         }
         // faces in photos the reader hid (and the snapshot does not know yet) are not shown either
         val hiddenNow = HiddenPhotos.delta(ops).filterValues { it }.keys
-        return PeopleIndex(all.values.map { w -> w to w.faces.filter { it.assetId !in hiddenNow } }.filter { (_, f) -> f.isNotEmpty() }.map { (w, f) -> PeopleReader.make(w.id, w.name, if (f.any { it.id == w.cover }) w.cover else -1, w.hidden, f) })
+        return PeopleIndex(
+            all.values.map { w -> w to w.faces.filter { it.assetId !in hiddenNow } }.filter { (_, f) -> f.isNotEmpty() }.map { (w, f) -> PeopleReader.make(w.id, w.name, if (f.any { it.id == w.cover }) w.cover else -1, w.hidden, f) },
+            unassigned.values.filter { it.assetId !in hiddenNow },
+        )
     }
 }
