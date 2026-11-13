@@ -45,8 +45,9 @@ try {
         if ($LASTEXITCODE -ne 0) { throw "unit tests failed" }
     }
     Write-Host "== building $Version"
-    $repoArg = if ($ReleasesRepo) { @("-PreleasesRepo=$ReleasesRepo") } else { @() }
-    & .\gradlew.bat --no-daemon :app:assembleRelease "-PappVersion=$Version" @repoArg
+    # handed over as an environment variable: the "=" in a command-line argument is split by cmd.exe when gradlew.bat is started
+    if ($ReleasesRepo) { $env:ORG_GRADLE_PROJECT_releasesRepo = $ReleasesRepo } else { Remove-Item Env:ORG_GRADLE_PROJECT_releasesRepo -ErrorAction SilentlyContinue }
+    & .\gradlew.bat --no-daemon :app:assembleRelease "-PappVersion=$Version"
     if ($LASTEXITCODE -ne 0) { throw "build failed" }
 
     $built = Join-Path $android "app\build\outputs\apk\release\app-release.apk"
