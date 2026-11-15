@@ -2,6 +2,7 @@ package dev.bookah.photos.viewer
 
 import android.content.Context
 import android.view.LayoutInflater
+import android.view.View
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,6 +16,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -123,10 +125,15 @@ fun PhotoPage(
 
 /** A video: the poster first, then ExoPlayer streaming the original from Nextcloud while this is the page on screen. */
 @Composable
-fun VideoPage(index: Int, lib: LibraryIndex, env: ViewerEnv, active: Boolean, onTap: () -> Unit, modifier: Modifier = Modifier) {
+fun VideoPage(
+    index: Int, lib: LibraryIndex, env: ViewerEnv, active: Boolean,
+    controlsVisible: Boolean, onControlsVisibilityChanged: (Boolean) -> Unit, modifier: Modifier = Modifier,
+) {
     val id = lib.ids[index]
     val etag = lib.etagHash[index]
     val context = LocalContext.current
+    val currentVisibilityChanged by rememberUpdatedState(onControlsVisibilityChanged)
+    val currentlyActive by rememberUpdatedState(active)
     var details by remember(id) { mutableStateOf<AssetDetails?>(null) }
     var failed by remember(id) { mutableStateOf(false) }
     var playing by remember(id) { mutableStateOf(false) }
@@ -156,8 +163,26 @@ fun VideoPage(index: Int, lib: LibraryIndex, env: ViewerEnv, active: Boolean, on
                 onDispose { player.removeListener(listener); player.release() }
             }
             AndroidView(
-                factory = { ctx -> PlayerView(ctx).also { it.player = player; it.setBackgroundColor(android.graphics.Color.TRANSPARENT) } },
-                update = { it.player = player },
+                factory = { ctx ->
+                    PlayerView(ctx).also { view ->
+                        // The Compose bars already fade. Avoid a second, asynchronous
+                        // visibility transition that can swallow a quick follow-up tap.
+                        view.setControllerAnimationEnabled(false)
+                        view.player = player
+                        view.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                        // PlayerView owns video taps and its automatic timeout. Keep the app's
+                        // bars in step without intercepting play/pause, seeking or pager swipes.
+                        view.setControllerVisibilityListener(PlayerView.ControllerVisibilityListener { visibility ->
+                            if (currentlyActive) currentVisibilityChanged(visibility == View.VISIBLE)
+                        })
+                    }
+                },
+                update = { view ->
+                    view.player = player
+                    if (controlsVisible != view.isControllerFullyVisible) {
+                        if (controlsVisible) view.showController() else view.hideController()
+                    }
+                },
                 modifier = Modifier.fillMaxSize(),
             )
         } else if (active) {

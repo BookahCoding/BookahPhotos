@@ -1,5 +1,12 @@
 # BookahPhotos HANDOFF
 
+## Latest: 15 November 2026 — viewer fix and app review
+
+- **Implemented:** video player controller visibility now drives the viewer bars; tapping a video hides/restores favourite/share, filmstrip and top bar together. Automatic hiding also follows playback controls. Native controller animation is disabled to avoid rapid-tap races; Compose retains its bar fade. Fully hidden bars no longer intercept taps or expose invisible accessibility actions.
+- **Verified:** generated H.264 playback on BookahPhotosTest Android 14. Full viewer run passed 23/24; the remaining paused-video-to-photo test passed separately after correcting test synchronization for photo double-tap recognition. Playback taps, timeout, paused taps, photo navigation, share, favourites, albums, hidden controls and accessibility covered. Corrected old video fixture position after library date sorting. Documented release-script unit-test tasks succeeded using unchanged Gradle cached outputs. Signed/minified 1.0.2 APK built; release certificate verified. Source review: `docs/2026-11-15-app-review.md`.
+- **Delivery:** signed `android/app/build/outputs/apk/release/BookahPhotos-1.0.2.apk` (50.6 MB), SHA-256 `b939dca8dd5b49c5ae694fc860f207179996c77e76014780b53c15d47cf4c6bc`. Chris declined the Nextcloud copy and requested a PR plus a normal release for in-app updates. [PR #1](https://github.com/BookahCoding/BookahPhotos/pull/1) is open on `fix/video-viewer-controls`; [v1.0.2](https://github.com/BookahCoding/BookahPhotos/releases/tag/v1.0.2) is published as the latest normal release from commit `d48956c237886e8943132fa350cabf3d533620ca`. GitHub's latest-release API reports draft=false, prerelease=false and an APK asset whose SHA-256 digest matches the verified local build. PR remains open (merge not requested).
+- **Not verified:** Xiaomi phone and real Nextcloud video streams. Review suggestions (save failure feedback, playback interruption/retry, metadata search filters, possible-duplicate comparison) were not implemented. Obsidian notes were not changed; project rules require approval for writes outside this folder.
+
 ## START HERE (updated 2026-11-12 early morning; the older sections below are history, newest at the bottom)
 
 **Where we are (updated 12 Nov evening):** Phase 2 and Phase 3 are built; 2e is done (release script tools

@@ -3,6 +3,7 @@ package dev.bookah.photos.viewer
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -37,8 +38,8 @@ class ViewerOverlayTest {
 
     private val hash = "61f7093d9a8087877078788888788888707007f878".chunked(2).map { it.toInt(16).toByte() }.toByteArray()
 
-    private fun lib(n: Int): LibraryIndex = LibraryIndex.build(
-        (0 until n).map { AssetRow(100L + it, 20240101 + it % 28, it.toLong(), if (it == 3) 1 else 0, hash, it, false, if (it == 3) 7_000 else 0) },
+    private fun lib(n: Int, videoUri: String? = null): LibraryIndex = LibraryIndex.build(
+        (0 until n).map { AssetRow(100L + it, 20240101 + it % 28, it.toLong(), if (it == 3) 1 else 0, hash, it, false, if (it == 3) 7_000 else 0, localUri = if (it == 3) videoUri else null) },
     )
 
     // 2024-08-24 08:46:33 UTC at +03:00
@@ -50,8 +51,17 @@ class ViewerOverlayTest {
     private var closedAt: Int? = null
     private var shared: Long? = null
     private var deleteAsked: Long? = null
+    private var viewerRoot: android.view.View? = null
 
-    private fun show(count: Int = 30, start: Int = 10) {
+    private fun findPlayer(view: android.view.View): androidx.media3.ui.PlayerView? {
+        if (view is androidx.media3.ui.PlayerView) return view
+        if (view is android.view.ViewGroup) for (i in 0 until view.childCount) {
+            findPlayer(view.getChildAt(i))?.let { return it }
+        }
+        return null
+    }
+
+    private fun show(count: Int = 30, start: Int = 10, videoUri: String? = null) {
         val ctx = InstrumentationRegistry.getInstrumentation().targetContext
         val env = ViewerEnv(
             previews = object : Previews { override fun url(fileId: Long, size: Int) = "http://127.0.0.1:9/p/$fileId" },
@@ -61,8 +71,9 @@ class ViewerOverlayTest {
             details = { details(it) },
             onDelete = { deleteAsked = it },
         )
-        val library = lib(count)
+        val library = lib(count, videoUri)
         rule.setContent {
+            viewerRoot = androidx.compose.ui.platform.LocalView.current.rootView
             BookahPhotosTheme {
                 ViewerOverlay(library, start, env, LibraryController(), onShare = { shared = it }, onClose = { closedAt = it })
             }
@@ -144,9 +155,79 @@ class ViewerOverlayTest {
     }
 
     @Test fun aVideoShowsItsPosterWithoutCrashing() {
-        show(start = 3)
+        show(count = 20, start = 3)
         rule.waitForIdle()
         rule.onNodeWithContentDescription("Share").assertIsDisplayed()
+    }
+
+    private fun showPlayingVideo() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val file = java.io.File(instrumentation.targetContext.cacheDir, "viewer-test.mp4")
+        instrumentation.context.assets.open("viewer-test.mp4").use { input -> file.outputStream().use { input.copyTo(it) } }
+        // Keep days unique so LibraryIndex sorting leaves the video at position 3.
+        show(count = 20, start = 3, videoUri = android.net.Uri.fromFile(file).toString())
+        rule.waitForIdle()
+        rule.runOnIdle { checkNotNull(viewerRoot?.rootView?.let(::findPlayer)) { "PlayerView missing from test window" } }
+        rule.waitUntil(10_000) {
+            var playing = false
+            rule.runOnIdle {
+                val player = viewerRoot?.rootView?.let(::findPlayer)?.player
+                player?.playerError?.let { throw AssertionError("Synthetic video failed to play", it) }
+                playing = player?.isPlaying == true
+            }
+            playing
+        }
+    }
+
+    private fun waitForHiddenActions() {
+        rule.waitUntil(7_000) {
+            rule.onAllNodes(androidx.compose.ui.test.hasContentDescription("Share")).fetchSemanticsNodes().isEmpty()
+        }
+    }
+
+    @Test fun tappingAVideoHidesAndRestoresTheViewerActions() {
+        showPlayingVideo()
+        rule.onNodeWithContentDescription("Share").assertIsDisplayed()
+        // Above the player's play/pause and seek controls: a tap on the video itself.
+        rule.onRoot().performTouchInput { click(Offset(width * 0.5f, height * 0.3f)) }
+        waitForHiddenActions()
+        rule.onNodeWithContentDescription("Share").assertDoesNotExist()
+        rule.onNodeWithTag("viewer-favourite").assertDoesNotExist()
+        rule.onRoot().performTouchInput { click(Offset(width * 0.5f, height * 0.3f)) }
+        rule.waitForIdle()
+        rule.onNodeWithContentDescription("Share").assertIsDisplayed()
+        rule.onNodeWithTag("viewer-favourite").assertIsDisplayed()
+    }
+
+    @Test fun videoTimeoutHidesActionsAndTapRestoresThem() {
+        showPlayingVideo()
+        waitForHiddenActions()
+        rule.onNodeWithTag("viewer-favourite").assertDoesNotExist()
+        rule.onRoot().performTouchInput { click(Offset(width * 0.5f, height * 0.3f)) }
+        rule.waitForIdle()
+        rule.onNodeWithContentDescription("Share").assertIsDisplayed()
+    }
+
+    @Test fun pausedVideoStillTogglesAndCanSwipeToPhoto() {
+        showPlayingVideo()
+        rule.runOnIdle { viewerRoot!!.rootView.let(::findPlayer)!!.player!!.pause() }
+        rule.onRoot().performTouchInput { click(Offset(width * 0.5f, height * 0.3f)) }
+        waitForHiddenActions()
+        rule.onRoot().performTouchInput { click(Offset(width * 0.5f, height * 0.3f)) }
+        rule.waitForIdle()
+        rule.onNodeWithContentDescription("Share").assertIsDisplayed()
+        rule.onRoot().performTouchInput { click(Offset(width * 0.5f, height * 0.3f)) }
+        waitForHiddenActions()
+        rule.onRoot().performTouchInput { swipeLeft() }
+        rule.waitForIdle()
+        rule.onRoot().performTouchInput { click() }
+        // Photo taps wait out the double-tap recognizer before toggling the bars.
+        rule.waitUntil(5_000) {
+            rule.onAllNodes(androidx.compose.ui.test.hasContentDescription("Back")).fetchSemanticsNodes().isNotEmpty()
+        }
+        rule.onNodeWithContentDescription("Back").performClick()
+        rule.waitUntil(5_000) { closedAt != null }
+        assertEquals(4, closedAt)
     }
 
     /** Saves pictures of the viewer and its details sheet (generated data) to compare with docs/design-spec.md. */
