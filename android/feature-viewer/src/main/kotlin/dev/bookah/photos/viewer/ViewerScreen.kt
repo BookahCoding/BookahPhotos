@@ -235,7 +235,7 @@ fun ViewerOverlay(
                 val i = ix(page)
                 val active = page == currentPage
                 if (lib.isVideo(i)) {
-                    VideoPage(i, lib, env, active, onTap = { controls = !controls })
+                    VideoPage(i, lib, env, active, controlsVisible = controls, onControlsVisibilityChanged = { controls = it })
                 } else {
                     PhotoPage(i, lib, env, active, onZoomed = { zoomed = it }, onTap = { controls = !controls })
                 }
@@ -243,45 +243,49 @@ fun ViewerOverlay(
             LaunchedEffect(currentPage) { zoomed = false }
 
             val barAlpha by animateFloatAsState(if (controls && !zoomed && opened && !closing && dragY == 0f) 1f else 0f, tween(180), label = "bars")
-            // top: back, the date pill
-            Row(
-                Modifier.fillMaxWidth().padding(top = topInset + 8.dp, start = 16.dp, end = 16.dp).alpha(barAlpha),
-                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                RoundButton(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back), { close() }, dark = true)
-                DatePill(lib, current, env, locale)
-                Box(Modifier.size(44.dp))
-            }
-            // bottom: filmstrip and the action bar
-            Column(Modifier.align(Alignment.BottomCenter).padding(bottom = bottomInset + 16.dp).alpha(barAlpha), horizontalAlignment = Alignment.CenterHorizontally) {
-                if (opened) Filmstrip(lib, order, currentPage, env) { target -> scope.launch { pager.scrollToPage(target) } } else Box(Modifier.height(52.dp))
-                Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    if (env.allowShare) RoundButton(Icons.Filled.Share, stringResource(R.string.share), { onShare(lib.ids[current]) }, size = 48, dark = true) else Spacer(Modifier.size(48.dp))
-                    Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                        Row(
-                            Modifier.height(48.dp).clip(CircleShape).background(Color(0xB31C1C1F)).border(1.dp, Color(0x1FFFFFFF), CircleShape).padding(horizontal = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            val fav = lib.ids[current] in favourites
-                            val toggle = env.onFavourite
-                            val canToggle = toggle != null && lib.ids[current] > 0                       // a photo only on this phone is not in Nextcloud
-                            PillIcon(
-                                if (fav) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder, stringResource(if (fav) R.string.unfavourite else R.string.favourite), "viewer-favourite",
-                                alpha = if (fav) 1f else 0.6f, onClick = if (canToggle) ({ toggle!!(lib.ids[current], !fav) }) else null,
-                            )
-                            env.onAddToAlbum?.let { add -> if (lib.ids[current] > 0) PillIcon(Icons.Filled.Add, stringResource(R.string.add_to_album), "viewer-add-album", onClick = { add(lib.ids[current]) }) }
-                            env.onRemoveFromAlbum?.let { remove -> PillIcon(Icons.Filled.Clear, stringResource(R.string.remove_from_album), "viewer-remove-album", onClick = { remove(lib.ids[current]) }) }
-                            env.onHide?.let { hide ->
-                                if (env.hideIsUnhide) Box(
-                                    Modifier.heightIn(min = 48.dp).clip(CircleShape).clickable(role = Role.Button) { hide(lib.ids[current]) }.padding(horizontal = 12.dp).testTag("viewer-unhide"),
-                                    contentAlignment = Alignment.Center,
-                                ) { Text(stringResource(R.string.unhide), color = Color.White, style = MaterialTheme.typography.titleMedium) }
-                                else PillIcon(Icons.Filled.Lock, stringResource(R.string.hide), "viewer-hide", onClick = { hide(lib.ids[current]) })
+            // Alpha alone leaves invisible buttons clickable and exposed to accessibility.
+            // Keep the fade, then remove both bars until they are shown again.
+            if (barAlpha > 0f) {
+                // top: back, the date pill
+                Row(
+                    Modifier.fillMaxWidth().padding(top = topInset + 8.dp, start = 16.dp, end = 16.dp).alpha(barAlpha),
+                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    RoundButton(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back), { close() }, dark = true)
+                    DatePill(lib, current, env, locale)
+                    Box(Modifier.size(44.dp))
+                }
+                // bottom: filmstrip and the action bar
+                Column(Modifier.align(Alignment.BottomCenter).padding(bottom = bottomInset + 16.dp).alpha(barAlpha), horizontalAlignment = Alignment.CenterHorizontally) {
+                    if (opened) Filmstrip(lib, order, currentPage, env) { target -> scope.launch { pager.scrollToPage(target) } } else Box(Modifier.height(52.dp))
+                    Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        if (env.allowShare) RoundButton(Icons.Filled.Share, stringResource(R.string.share), { onShare(lib.ids[current]) }, size = 48, dark = true) else Spacer(Modifier.size(48.dp))
+                        Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                            Row(
+                                Modifier.height(48.dp).clip(CircleShape).background(Color(0xB31C1C1F)).border(1.dp, Color(0x1FFFFFFF), CircleShape).padding(horizontal = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                val fav = lib.ids[current] in favourites
+                                val toggle = env.onFavourite
+                                val canToggle = toggle != null && lib.ids[current] > 0                       // a photo only on this phone is not in Nextcloud
+                                PillIcon(
+                                    if (fav) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder, stringResource(if (fav) R.string.unfavourite else R.string.favourite), "viewer-favourite",
+                                    alpha = if (fav) 1f else 0.6f, onClick = if (canToggle) ({ toggle!!(lib.ids[current], !fav) }) else null,
+                                )
+                                env.onAddToAlbum?.let { add -> if (lib.ids[current] > 0) PillIcon(Icons.Filled.Add, stringResource(R.string.add_to_album), "viewer-add-album", onClick = { add(lib.ids[current]) }) }
+                                env.onRemoveFromAlbum?.let { remove -> PillIcon(Icons.Filled.Clear, stringResource(R.string.remove_from_album), "viewer-remove-album", onClick = { remove(lib.ids[current]) }) }
+                                env.onHide?.let { hide ->
+                                    if (env.hideIsUnhide) Box(
+                                        Modifier.heightIn(min = 48.dp).clip(CircleShape).clickable(role = Role.Button) { hide(lib.ids[current]) }.padding(horizontal = 12.dp).testTag("viewer-unhide"),
+                                        contentAlignment = Alignment.Center,
+                                    ) { Text(stringResource(R.string.unhide), color = Color.White, style = MaterialTheme.typography.titleMedium) }
+                                    else PillIcon(Icons.Filled.Lock, stringResource(R.string.hide), "viewer-hide", onClick = { hide(lib.ids[current]) })
+                                }
+                                PillIcon(Icons.Filled.Info, stringResource(R.string.info), "viewer-info", onClick = { showDetails = true })
                             }
-                            PillIcon(Icons.Filled.Info, stringResource(R.string.info), "viewer-info", onClick = { showDetails = true })
                         }
+                        if (env.allowDelete) RoundButton(Icons.Filled.Delete, stringResource(R.string.delete), { env.onDelete(lib.ids[current]) }, size = 48, dark = true) else Spacer(Modifier.size(48.dp))
                     }
-                    if (env.allowDelete) RoundButton(Icons.Filled.Delete, stringResource(R.string.delete), { env.onDelete(lib.ids[current]) }, size = 48, dark = true) else Spacer(Modifier.size(48.dp))
                 }
             }
         }
