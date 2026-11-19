@@ -1,6 +1,6 @@
-# The daily job (proposal: not installed)
+# The daily job
 
-Status: **built and tested, NOT installed.** Installing it changes Chris's PC (a Task Scheduler entry), so it needs his yes.
+Status: **installed** (Task Scheduler 'BookahPhotos daily index'). Since 19 Nov 2026 it starts at 06:00 and repeats every 3 hours for 17 hours while Chris is logged on (`install-daily-task.ps1 -At 06:00 -EveryHours 3 -RepeatHours 17`); the older text below describes the once-a-day schedule at 14:00.
 
 ## What it does
 
