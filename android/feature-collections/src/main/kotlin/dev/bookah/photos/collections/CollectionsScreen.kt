@@ -28,7 +28,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -282,7 +282,7 @@ fun CollectionsScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(stringResource(R.string.collections), Modifier.weight(1f), style = MaterialTheme.typography.headlineLarge, color = PhotoTheme.colors.textPrimary)
-            RoundButton(Icons.Filled.AccountCircle, stringResource(R.string.settings), onSettings)
+            RoundButton(Icons.Filled.Settings, stringResource(R.string.settings), onSettings)
             Box(Modifier.padding(start = 10.dp)) {
                 RoundButton(Icons.Filled.MoreVert, stringResource(R.string.menu), { menu = true })
                 DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {

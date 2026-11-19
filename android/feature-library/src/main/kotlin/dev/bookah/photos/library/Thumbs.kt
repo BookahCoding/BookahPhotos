@@ -13,7 +13,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.alpha
-import androidx.compose.runtime.produceState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.FilterQuality
@@ -47,9 +47,12 @@ private val localThumbCache = object : LruCache<String, ImageBitmap>(500) {}
 fun LocalThumb(uri: String, sizePx: Int, modifier: Modifier = Modifier, fit: Boolean = false) {
     val context = LocalContext.current
     val key = "$sizePx|$uri"
-    val bitmap by produceState(localThumbCache.get(key), key) {
-        if (value == null) {
-            value = withContext(Dispatchers.IO) {
+    // Keyed state, not produceState: a grid cell is reused for another photo when photos are deleted, and produceState keeps the OLD value
+    // when its key changes, so the cell kept showing the previous photo's picture (and tapping it acted on the photo that took its place).
+    var bitmap by remember(key) { mutableStateOf(localThumbCache.get(key)) }
+    LaunchedEffect(key) {
+        if (bitmap == null) {
+            bitmap = withContext(Dispatchers.IO) {
                 runCatching { context.contentResolver.loadThumbnail(Uri.parse(uri), android.util.Size(sizePx, sizePx), null).asImageBitmap() }.getOrNull()
             }?.also { localThumbCache.put(key, it) }
         }
@@ -63,15 +66,15 @@ private val placeholderCache = object : LruCache<Int, ImageBitmap>(4_000) {}
 @Composable
 fun rememberPlaceholder(key: Int, hash: ByteArray?): ImageBitmap? {
     if (hash == null) return null
-    val cached = placeholderCache.get(key)
-    val state = produceState(cached, key, hash) {
-        if (value == null) {
-            value = withContext(Dispatchers.Default) {
+    var state by remember(key, hash) { mutableStateOf(placeholderCache.get(key)) }      // keyed state: see LocalThumb
+    LaunchedEffect(key, hash) {
+        if (state == null) {
+            state = withContext(Dispatchers.Default) {
                 ThumbHash.decode(hash)?.let { Bitmap.createBitmap(it.argb, it.width, it.height, Bitmap.Config.ARGB_8888).asImageBitmap() }
             }?.also { placeholderCache.put(key, it) }
         }
     }
-    return state.value
+    return state
 }
 
 /** A square picture: the placeholder at once, the preview fades in over it. [sizePx] is the preview size asked from Nextcloud. */
@@ -110,8 +113,9 @@ fun PhotoImage(
             var failed by remember(request) { mutableStateOf(false) }
             AsyncImage(request, null, loader, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, onError = { failed = true })
             // no Nextcloud preview: make a thumbnail from the original once (photos only), keep it, and show it
-            val fallback by produceState<java.io.File?>(null, failed, id) {
-                if (failed && !lib.isVideo(index) && !lib.isRaw[index] && id > 0) value = previews.fallbackThumb(id, sizePx)
+            var fallback by remember(id) { mutableStateOf<java.io.File?>(null) }          // keyed state: see LocalThumb
+            LaunchedEffect(failed, id) {
+                if (failed && !lib.isVideo(index) && !lib.isRaw[index] && id > 0) fallback = previews.fallbackThumb(id, sizePx)
             }
             fallback?.let { f -> AsyncImage(f, null, loader, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
             if (failed && fallback == null && placeholder == null) {

@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -163,6 +164,8 @@ fun SelectBottomBar(count: Int, onShare: (() -> Unit)?, onDelete: (() -> Unit)?,
 fun LibraryHeader(
     title: String, subtitle: String, selecting: Boolean, onSelect: () -> Unit, onDone: () -> Unit, onTitleLongPress: () -> Unit,
     source: Source, onSource: (Source) -> Unit, showSource: Boolean, modifier: Modifier = Modifier,
+    /** The gear: opens Settings. Null leaves it out. */
+    onSettings: (() -> Unit)? = null,
 ) {
     val c = PhotoTheme.colors
     var menu by remember { mutableStateOf(false) }
@@ -187,6 +190,10 @@ fun LibraryHeader(
                     Spacer(Modifier.width(8.dp))
                 }
                 PillButton(stringResource(R.string.select), onSelect)
+                if (onSettings != null) {
+                    Spacer(Modifier.width(8.dp))
+                    RoundButton(Icons.Filled.Settings, stringResource(R.string.settings), onSettings, modifier = Modifier.testTag("settings-button"))
+                }
             }
         }
     }

@@ -11,6 +11,12 @@ import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.test.platform.app.InstrumentationRegistry
 import coil3.ImageLoader
 import dev.bookah.photos.data.AssetRow
@@ -56,6 +62,30 @@ class LocalPhotosTest {
     }
 
     @After fun cleanUp() { inserted.forEach { runCatching { context.contentResolver.delete(it, null, null) } } }
+
+    private fun centreIs(tag: String, wantRed: Boolean): Boolean = try {
+        val b = rule.onNodeWithTag(tag).captureToImage().asAndroidBitmap()
+        val p = b.getPixel(b.width / 2, b.height / 2)
+        val r = Color.red(p); val g = Color.green(p)
+        if (wantRed) r > 150 && g < 100 else g > 150 && r < 100
+    } catch (e: Throwable) { false }
+
+    /**
+     * A grid cell is reused for another photo when photos are deleted and the cells below move up. The cell must then show the NEW photo's
+     * picture; it used to keep the old one (so a tile showed one photo while tapping it acted on another).
+     */
+    @Test fun aReusedCellShowsTheNewPhotoNotTheOldOne() {
+        insert("bk_swap_red.jpg", Color.RED)
+        insert("bk_swap_green.jpg", Color.GREEN)
+        val red = inserted[inserted.size - 2].toString()
+        val green = inserted[inserted.size - 1].toString()
+        var uri by androidx.compose.runtime.mutableStateOf(red)
+        rule.setContent { BookahPhotosTheme { androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.size(120.dp).testTag("t")) { LocalThumb(uri, 128) } } }
+        rule.waitUntil(15_000) { centreIs("t", wantRed = true) }
+        uri = green
+        rule.waitUntil(15_000) { centreIs("t", wantRed = false) }
+        assertTrue(centreIs("t", wantRed = false))
+    }
 
     @Test fun phonePhotosAreReadMergedAndShown() {
         val matchedSize = insert("bk_match_1.JPG", Color.RED)

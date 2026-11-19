@@ -14,6 +14,7 @@ import androidx.compose.ui.test.advanceEventTime
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -53,12 +54,12 @@ class LibraryScreenTest {
         return LibraryIndex.build(rows)
     }
 
-    private fun show(count: Int, startAt: Int? = null, onShare: (LongArray) -> Unit = {}, onDelete: (LongArray) -> Unit = {}, onOpen: (Int) -> Unit = {}, controller: LibraryController = LibraryController()) {
+    private fun show(count: Int, startAt: Int? = null, onShare: (LongArray) -> Unit = {}, onDelete: (LongArray) -> Unit = {}, onOpen: (Int) -> Unit = {}, controller: LibraryController = LibraryController(), onSettings: (() -> Unit)? = null) {
         val lib = fakeLibrary(count)
         val ctx = InstrumentationRegistry.getInstrumentation().targetContext
         rule.setContent {
             BookahPhotosTheme {
-                LibraryScreen(lib, object : Previews { override fun url(fileId: Long, size: Int) = "http://127.0.0.1:9/p/$fileId/$size" }, ImageLoader.Builder(ctx).build(), onShare, onOpen, {}, startAtItem = startAt, onDelete = onDelete, controller = controller)
+                LibraryScreen(lib, object : Previews { override fun url(fileId: Long, size: Int) = "http://127.0.0.1:9/p/$fileId/$size" }, ImageLoader.Builder(ctx).build(), onShare, onOpen, {}, startAtItem = startAt, onDelete = onDelete, controller = controller, onSettings = onSettings)
             }
         }
     }
@@ -69,6 +70,13 @@ class LibraryScreenTest {
         rule.onNodeWithText("Years").assertIsDisplayed()
         rule.onNodeWithText("Months").assertIsDisplayed()
         rule.onNodeWithText("All").assertIsDisplayed()
+    }
+
+    @Test fun theGearInTheHeaderOpensSettings() {
+        var opened = 0
+        show(50, onSettings = { opened++ })
+        rule.onNodeWithTag("settings-button").assertIsDisplayed().assertHasClickAction().performClick()
+        assertEquals(1, opened)
     }
 
     @Test fun threeViewsSwitchWithoutCrashing() {

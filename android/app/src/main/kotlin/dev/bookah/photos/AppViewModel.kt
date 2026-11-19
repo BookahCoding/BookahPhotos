@@ -211,7 +211,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 _deleteResults.emit(DeleteResult(0, 0, pendingPhoneCount, phoneCancelled = true))
                 return@launch
             }
-            reloadLocals()
+            readLocalsAndRebuild()          // finished before the screens are told the delete is done
             continueNextcloudDelete(phoneCancelled = false)
         }
     }
@@ -246,6 +246,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 return
             }
             if (gone.isNotEmpty()) {
+                deleted.add(gone)       // the index file on disk still lists them until BookahPC publishes a new one
                 snapshotRows = snapshotRows.filter { it.id !in gone }
                 extraFiles = extraFiles.filter { it.id !in gone }
                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { extraCache.write(extraFiles) }
@@ -255,6 +256,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _state.update { it.copy(deleteDoneTick = it.deleteDoneTick + 1, deleteProgress = null) }
         _deleteResults.emit(DeleteResult(moved, failed, pendingPhoneCount, phoneCancelled))
     }
+
+    /** Photos this phone deleted from Nextcloud; the index file still lists them until BookahPC publishes a new one (see DeletedFiles). */
+    private val deleted = dev.bookah.photos.data.DeletedFiles(File(app.filesDir, "deleted-nextcloud.txt"))
 
     private var snapshotRows: List<dev.bookah.photos.data.AssetRow> = emptyList()
     private var hiddenSnapshotRows: List<dev.bookah.photos.data.AssetRow> = emptyList()
@@ -277,6 +281,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             val rows = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { Reader.loadRows(file) }
             if (rows != null) snapshotRows = rows
             hiddenSnapshotRows = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { Reader.loadHiddenRows(file) }
+            deleted.load()
+            if (deleted.ids.isNotEmpty()) deleted.prune((snapshotRows.asSequence() + hiddenSnapshotRows.asSequence()).mapTo(HashSet()) { it.id })
             readMs = android.os.SystemClock.elapsedRealtime() - readStart
             search.onSnapshot(file)                                   // the vectors and tags of this snapshot (in the background)
             people.onSnapshot(file)                                   // people and the reader's corrections (in the background)
@@ -300,15 +306,15 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** Reads the phone's photos again (new screenshot, deleted photo...) and rebuilds the library. */
-    fun reloadLocals() {
-        viewModelScope.launch {
-            val access = _state.value.localAccess
-            val rows = if (access == LocalAccess.None) emptyList()
-            else kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { dev.bookah.photos.data.LocalPhotosReader.read(getApplication()) }
-            localRows = rows
-            localById = rows.associateBy { it.mediaId }
-            rebuild()
-        }
+    fun reloadLocals() { viewModelScope.launch { readLocalsAndRebuild() } }
+
+    private suspend fun readLocalsAndRebuild() {
+        val access = _state.value.localAccess
+        val rows = if (access == LocalAccess.None) emptyList()
+        else kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { dev.bookah.photos.data.LocalPhotosReader.read(getApplication()) }
+        localRows = rows
+        localById = rows.associateBy { it.mediaId }
+        rebuild()
     }
 
     private suspend fun rebuild() = rebuildLock.withLock {
@@ -316,10 +322,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val (lib, stats, hiddenLib) = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
             // files uploaded after the index was made, unless the index already holds them
             val known = (snapshotRows.asSequence() + hiddenSnapshotRows.asSequence()).mapTo(HashSet()) { it.id }
-            val extra = extraFiles.filter { it.id !in known }.map { it.toRow() }
+            val gone = deleted.ids
+            val extra = extraFiles.filter { it.id !in known && it.id !in gone }.map { it.toRow() }
             // hidden photos take part in the merge (so their phone copies are hidden with them) and are then taken out of the library
             val hidden = dev.bookah.photos.data.HiddenPhotos.effective(hiddenSnapshotRows.mapTo(HashSet()) { it.id }, hiddenDelta)
-            val merged = dev.bookah.photos.data.LocalMerge.merge(snapshotRows + hiddenSnapshotRows + extra, localRows, hidden = hidden)
+            val merged = dev.bookah.photos.data.LocalMerge.merge((snapshotRows + hiddenSnapshotRows).filter { it.id !in gone } + extra, localRows, hidden = hidden)
             Triple(LibraryIndex.build(merged.rows), merged.stats, LibraryIndex.build(merged.hiddenRows))
         }
         val mergeMs = android.os.SystemClock.elapsedRealtime() - t0
@@ -576,6 +583,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         listsCache.clear()
         extraCache.clear()
         extraFiles = emptyList()
+        deleted.clear()
         File(getApplication<Application>().cacheDir, "thumbs").deleteRecursively()
         File(getApplication<Application>().cacheDir, "fallback-thumbs").deleteRecursively()
         _state.update { it.copy(session = null, info = null, library = null, duplicates = emptyMap(), hiddenLibrary = LibraryIndex.build(emptyList()), memories = dev.bookah.photos.data.MemoriesIndex.EMPTY, places = dev.bookah.photos.data.PlacesIndex.EMPTY, lists = null, signIn = SignInUi.Idle, sync = SyncUi.Idle) }

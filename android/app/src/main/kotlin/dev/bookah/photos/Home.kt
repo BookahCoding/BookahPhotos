@@ -127,6 +127,8 @@ fun SignedInHome(
     val busy = viewer != null || selecting || stack.isNotEmpty()
     var shown by remember { mutableStateOf(latest) }
     LaunchedEffect(latest, busy) { if (!busy) shown = latest }
+    // after a delete the held-back library is applied even on a pushed page: the pages look photos up by id, so the deleted tiles just disappear
+    LaunchedEffect(state.deleteDoneTick) { if (state.deleteDoneTick > 0) shown = latest }
     val effective = remember(shown, source) { shown.bySource(source) }
 
     val labels = CollectionLabels(
@@ -250,7 +252,7 @@ fun SignedInHome(
         when (tab) {
             Tab.Library -> LibraryScreen(
                 effective, previews, loader, onShare = vm::share, onOpen = { viewer = ViewerRequest(effective.ids[it], null, true) },
-                onTitleLongPress = onTitleLongPress, controller = libraryController, favourites = favourites, banner = banner,
+                onTitleLongPress = onTitleLongPress, onSettings = { stack = stack + Page.Settings }, controller = libraryController, favourites = favourites, banner = banner,
                 onLibraryButton = { showTabs = true }, hideBottomBar = showTabs,
                 source = source, onSource = { source = it }, showSource = state.localAccess != LocalAccess.None || source != Source.All,
                 onSelectingChange = { selecting = it },
