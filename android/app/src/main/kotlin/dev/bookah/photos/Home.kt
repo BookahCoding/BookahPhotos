@@ -127,6 +127,8 @@ fun SignedInHome(
     val busy = viewer != null || selecting || stack.isNotEmpty()
     var shown by remember { mutableStateOf(latest) }
     LaunchedEffect(latest, busy) { if (!busy) shown = latest }
+    // after a delete the held-back library is applied even on a pushed page: the pages look photos up by id, so the deleted tiles just disappear
+    LaunchedEffect(state.deleteDoneTick) { if (state.deleteDoneTick > 0) shown = latest }
     val effective = remember(shown, source) { shown.bySource(source) }
 
     val labels = CollectionLabels(

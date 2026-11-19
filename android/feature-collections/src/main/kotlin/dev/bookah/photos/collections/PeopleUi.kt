@@ -25,7 +25,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -93,9 +96,10 @@ fun PersonAvatar(person: Person, previews: Previews, loader: ImageLoader, modifi
 @Composable
 fun FaceImage(faceId: Long, assetId: Long, box: FloatArray, previews: Previews, loader: ImageLoader, modifier: Modifier = Modifier, outPx: Int = 192, circle: Boolean = false) {
     val context = LocalContext.current
-    val bitmap by produceState(faceCache.get(faceId), faceId) {
-        if (value == null) {
-            value = withContext(Dispatchers.IO) {
+    var bitmap by remember(faceId) { mutableStateOf(faceCache.get(faceId)) }          // keyed state: produceState would keep the previous face when the cell is reused
+    LaunchedEffect(faceId) {
+        if (bitmap == null) {
+            bitmap = withContext(Dispatchers.IO) {
                 runCatching {
                     val px = FaceCrop.previewSize(box[2], box[3])
                     val request = ImageRequest.Builder(context).data(previews.fitUrl(assetId, px)).size(Size(px, px)).allowHardware(false)
