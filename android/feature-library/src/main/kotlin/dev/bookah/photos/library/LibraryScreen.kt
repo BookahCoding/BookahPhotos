@@ -94,6 +94,8 @@ fun LibraryScreen(
     clearSelectionTick: Int = 0,
     /** The round Search button of the bottom bar; null keeps it inactive. */
     onSearch: (() -> Unit)? = null,
+    /** The gear in the header: opens Settings. */
+    onSettings: (() -> Unit)? = null,
 ) {
     val locale: Locale = LocalConfiguration.current.locales[0]
     var mode by rememberSaveable { mutableStateOf(LibraryMode.All) }
@@ -243,7 +245,7 @@ fun LibraryScreen(
             title = stringResource(R.string.library), subtitle = headerSubtitle, selecting = selecting,
             onSelect = { selecting = true; selected = emptySet() },
             onDone = { selecting = false; selected = emptySet() },
-            onTitleLongPress = onTitleLongPress, source = source, onSource = onSource, showSource = showSource,
+            onTitleLongPress = onTitleLongPress, source = source, onSource = onSource, showSource = showSource, onSettings = onSettings,
             modifier = Modifier.align(Alignment.TopStart).padding(top = topInset),
         )
 

@@ -252,7 +252,7 @@ fun SignedInHome(
         when (tab) {
             Tab.Library -> LibraryScreen(
                 effective, previews, loader, onShare = vm::share, onOpen = { viewer = ViewerRequest(effective.ids[it], null, true) },
-                onTitleLongPress = onTitleLongPress, controller = libraryController, favourites = favourites, banner = banner,
+                onTitleLongPress = onTitleLongPress, onSettings = { stack = stack + Page.Settings }, controller = libraryController, favourites = favourites, banner = banner,
                 onLibraryButton = { showTabs = true }, hideBottomBar = showTabs,
                 source = source, onSource = { source = it }, showSource = state.localAccess != LocalAccess.None || source != Source.All,
                 onSelectingChange = { selecting = it },
